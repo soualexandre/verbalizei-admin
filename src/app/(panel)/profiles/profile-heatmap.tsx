@@ -189,6 +189,7 @@ export function ProfileHeatmap({
                           </span>
                           <span className="hidden tabular-nums sm:inline">
                             {formatNumber(g.users)} usuários
+                            {g.inferredUsers > 0 && ` · ${formatNumber(g.inferredUsers)} inferidos`}
                           </span>
                           <ReadingTag reading={reading} />
                         </span>
@@ -205,6 +206,9 @@ export function ProfileHeatmap({
                           value: `${fmtPct(g.shareOfBase)} da base → ${fmtPct(g.shareOfActiveDays)} dos acessos`,
                           lines: [
                             `${formatNumber(g.users)} usuários · ${formatNumber(g.activeDays)} dias ativos no período`,
+                            ...(g.inferredUsers > 0
+                              ? [`${formatNumber(g.inferredUsers)} entraram por perfil inferido.`]
+                              : []),
                             g.shareOfActiveDays > g.shareOfBase
                               ? "Acessa mais do que o seu tamanho na base."
                               : g.shareOfActiveDays < g.shareOfBase

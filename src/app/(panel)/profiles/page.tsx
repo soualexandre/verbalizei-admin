@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
 import { api } from "@/lib/api";
@@ -34,15 +35,16 @@ const PERIODS = [7, 30, 90] as const;
 export default function ProfilesPage() {
   const [days, setDays] = useState<number>(30);
   const [includeMocks, setIncludeMocks] = useState(false);
+  const [includeInferred, setIncludeInferred] = useState(true);
   const [dimensionKey, setDimensionKey] = useState<ProfileDimensionKey>("persona");
   const [selected, setSelected] = useState<string[]>([]);
   const [highlighted, setHighlighted] = useState<string | null>(null);
 
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
-    queryKey: ["profiles", days, includeMocks],
+    queryKey: ["profiles", days, includeMocks, includeInferred],
     queryFn: () =>
       api.get<ProfilesAnalysis>(
-        `/admin/profiles?days=${days}&includeMocks=${includeMocks ? "true" : "false"}`,
+        `/admin/profiles?days=${days}&includeMocks=${includeMocks}&includeInferred=${includeInferred}`,
       ),
     placeholderData: (prev) => prev,
   });
@@ -87,6 +89,16 @@ export default function ProfilesPage() {
               ))}
             </TabsList>
           </Tabs>
+          <div className="flex items-center gap-2">
+            <Switch
+              id="profiles-inferred"
+              checked={includeInferred}
+              onCheckedChange={setIncludeInferred}
+            />
+            <Label htmlFor="profiles-inferred" className="text-muted-foreground">
+              Incluir perfis inferidos
+            </Label>
+          </div>
           <div className="flex items-center gap-2">
             <Switch
               id="profiles-mocks"
@@ -164,6 +176,21 @@ export default function ProfilesPage() {
                   label="completaram o onboarding"
                   value={fmtPct(data.onboardedRate)}
                 />
+                {data.includeInferred && data.inferredUsers > 0 && (
+                  <div className="flex gap-1">
+                    <dt className="sr-only">perfis inferidos</dt>
+                    <dd>
+                      <span className="text-foreground font-semibold tabular-nums">
+                        {formatNumber(data.inferredUsers)}
+                      </span>{" "}
+                      com perfil inferido (
+                      <Link href="/enrichment" className="underline underline-offset-2">
+                        ver
+                      </Link>
+                      )
+                    </dd>
+                  </div>
+                )}
                 <div className="flex gap-1">
                   <dt className="sr-only">Atualizado em</dt>
                   <dd>Atualizado {formatDateTime(data.generatedAt)}</dd>
@@ -253,6 +280,9 @@ export default function ProfilesPage() {
                           Todos os usuários não administradores
                           {data.includeMocks ? ", incluindo mocks" : ", sem mocks"}. Datas no
                           fuso de Brasília.
+                          {data.includeInferred
+                            ? " Quem não respondeu o onboarding, respondeu “Outro” ou está sem segmento entra pelo perfil inferido (confiança de 50% ou mais); o que o usuário declarou sempre vence."
+                            : " Só respostas declaradas pelo usuário."}
                         </dd>
                       </div>
                     </dl>

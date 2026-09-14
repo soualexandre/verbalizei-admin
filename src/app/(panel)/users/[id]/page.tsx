@@ -3,11 +3,17 @@
 import { use } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Mic, Dumbbell } from "lucide-react";
+import { ArrowLeft, Mic, Dumbbell, WandSparkles } from "lucide-react";
 import { api } from "@/lib/api";
-import type { UserDetail } from "@/lib/types";
+import type { UserDetail, UserEnrichmentDetail } from "@/lib/types";
 import { formatDateTime } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
+import { EnrichmentActions } from "@/components/enrichment-actions";
+import {
+  ConfidenceMeter,
+  EnrichmentProfile,
+  REASON_LABEL,
+} from "@/components/profile-enrichment";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -75,6 +81,8 @@ export default function UserDetailPage({
               )}
             </CardContent>
           </Card>
+
+          <InferredProfileCard userId={id} />
 
           <Card>
             <CardHeader>
@@ -183,5 +191,44 @@ function Metric({ label, value }: { label: string; value: number | null }) {
     <span>
       {label}: <strong>{value != null ? value.toFixed(1) : "—"}</strong>
     </span>
+  );
+}
+
+function InferredProfileCard({ userId }: { userId: string }) {
+  const { data } = useQuery({
+    queryKey: ["user-enrichment", userId],
+    queryFn: () => api.get<UserEnrichmentDetail>(`/admin/enrichment/users/${userId}`),
+  });
+
+  // Perfil completo e sem inferência guardada: nada a mostrar.
+  if (!data || (data.reasons.length === 0 && !data.enrichment)) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between gap-3">
+          <span className="flex items-center gap-2">
+            <WandSparkles className="size-4" />
+            Perfil inferido
+          </span>
+          {data.enrichment?.confidence != null && (
+            <ConfidenceMeter value={data.enrichment.confidence} />
+          )}
+        </CardTitle>
+        <CardDescription>
+          {data.reasons.length
+            ? `Enriquecido porque: ${data.reasons.map((r) => REASON_LABEL[r].toLowerCase()).join(", ")}.`
+            : "O usuário completou o perfil depois do enriquecimento; o declarado vale."}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {data.enrichment ? (
+          <EnrichmentProfile enrichment={data.enrichment} signals={data.enrichment.signals} />
+        ) : (
+          <p className="text-muted-foreground text-sm">Ainda não processado.</p>
+        )}
+        <EnrichmentActions userId={userId} detail={data} />
+      </CardContent>
+    </Card>
   );
 }

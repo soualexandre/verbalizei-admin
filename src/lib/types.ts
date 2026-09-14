@@ -320,6 +320,8 @@ export interface ProfileGroupStats {
   daysPerActiveUser: number;
   recurringRate: number;
   premiumRate: number;
+  /** Usuários que entraram no grupo pelo perfil inferido. */
+  inferredUsers: number;
 }
 
 export interface ProfileDimension {
@@ -334,7 +336,130 @@ export interface ProfilesAnalysis {
   generatedAt: string;
   period: { days: number; from: string; to: string; recurringThreshold: number };
   includeMocks: boolean;
+  includeInferred: boolean;
+  inferredUsers: number;
   base: ProfileGroupStats;
   onboardedRate: number;
   dimensions: ProfileDimension[];
+}
+
+// ─── Enriquecimento de perfil ────────────────────────────────────────────────
+
+export type EnrichmentReason = "NO_ONBOARDING" | "FREE_TEXT" | "NO_SEGMENT";
+export type EnrichmentStatus = "READY" | "INSUFFICIENT_DATA" | "FAILED";
+export type EnrichmentListStatus = EnrichmentStatus | "NOT_PROCESSED";
+
+export interface EnrichmentRunState {
+  running: boolean;
+  trigger: "manual" | "schedule" | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+  total: number;
+  processed: number;
+  ready: number;
+  insufficient: number;
+  failed: number;
+  skippedUnchanged: number;
+  error: string | null;
+}
+
+export interface EnrichmentSummary {
+  candidates: number;
+  reasons: Record<EnrichmentReason, number>;
+  status: Record<EnrichmentListStatus, number>;
+  applied: number;
+  applicableHighConfidence: number;
+  inferredSegments: Array<{
+    key: UserSegment;
+    label: string;
+    users: number;
+    avgConfidence: number;
+  }>;
+  topOccupations: Array<{ label: string; users: number }>;
+  topIndustries: Array<{ label: string; users: number }>;
+  lastEnrichedAt: string | null;
+  llmAvailable: boolean;
+  run: EnrichmentRunState;
+}
+
+export interface EnrichmentSimulation {
+  candidates: number;
+  toProcess: number;
+  queued: number;
+  withoutEvidence: number;
+  skippedUnchanged: number;
+  limit: number;
+  llmAvailable: boolean;
+}
+
+export interface ProfileEnrichment {
+  status: EnrichmentStatus;
+  inferredSegment: UserSegment | null;
+  inferredSegmentLabel: string | null;
+  inferredObjective: string | null;
+  inferredObjectiveLabel: string | null;
+  inferredAudience: string | null;
+  inferredAudienceLabel: string | null;
+  inferredObstacle: string | null;
+  inferredObstacleLabel: string | null;
+  confidence: number | null;
+  occupation: string | null;
+  industry: string | null;
+  speakingContexts: string[];
+  goals: string | null;
+  summary: string | null;
+  rationale: string | null;
+  source: string | null;
+  error: string | null;
+  appliedAt: string | null;
+  updatedAt: string;
+}
+
+export interface EnrichmentSignals {
+  onboarding: {
+    completed: boolean;
+    declaredSegment: string | null;
+    objective: string | null;
+    audience: string | null;
+    obstacle: string | null;
+  };
+  emailDomain: string | null;
+  lead: {
+    source: string | null;
+    context: string | null;
+    mainPain: string | null;
+    urgency: string | null;
+  } | null;
+  customScenarios: Array<{ title: string; description: string | null }>;
+  scenariosUsed: Array<{ title: string; sessions: number }>;
+  practice: Array<{
+    theme: string | null;
+    preset: string | null;
+    customContext: string | null;
+    customScenario: string | null;
+  }>;
+  studiedUnits: Array<{ title: string; segments: string[]; lessons: number }>;
+  transcriptExcerpts: string[];
+  feedbackComment: string | null;
+}
+
+export interface EnrichmentUserRow {
+  user: {
+    id: string;
+    name: string | null;
+    email: string;
+    createdAt: string;
+    declaredSegment: UserSegment | null;
+  };
+  reasons: EnrichmentReason[];
+  status: EnrichmentListStatus;
+  enrichment: ProfileEnrichment | null;
+  canApply: boolean;
+}
+
+export interface UserEnrichmentDetail {
+  reasons: EnrichmentReason[];
+  declaredSegment: UserSegment | null;
+  enrichment: (ProfileEnrichment & { signals: EnrichmentSignals | null }) | null;
+  canApply: boolean;
 }
