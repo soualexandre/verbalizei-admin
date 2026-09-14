@@ -30,6 +30,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HeatLegend, ProfileHeatmap } from "./profile-heatmap";
 import { ComparePanel, ConclusionsList } from "./insight-panels";
+import { GroupDetailPanel } from "./group-detail-panel";
 
 const PERIODS = [
   { value: "7", label: "7 dias" },
@@ -45,12 +46,14 @@ export default function ProfilesPage() {
   const [dimensionKey, setDimensionKey] = useState<ProfileDimensionKey>("persona");
   const [selected, setSelected] = useState<string[]>([]);
   const [highlighted, setHighlighted] = useState<string | null>(null);
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const analysisQuery = `days=${days}&includeMocks=${includeMocks}&includeInferred=${includeInferred}`;
 
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["profiles", days, includeMocks, includeInferred],
     queryFn: () =>
       api.get<ProfilesAnalysis>(
-        `/admin/profiles?days=${days}&includeMocks=${includeMocks}&includeInferred=${includeInferred}`,
+        `/admin/profiles?${analysisQuery}`,
       ),
     placeholderData: (prev) => prev,
   });
@@ -69,6 +72,7 @@ export default function ProfilesPage() {
     setDimensionKey(key as ProfileDimensionKey);
     setSelected([]);
     setHighlighted(null);
+    setOpenGroup(null);
   }
 
   function toggleSelect(key: string) {
@@ -151,6 +155,11 @@ export default function ProfilesPage() {
                       <p className="max-w-3xl text-base leading-relaxed text-pretty">
                         {verdict.support}
                       </p>
+                      {verdict.baseNote && (
+                        <p className="text-muted-foreground max-w-3xl text-sm leading-relaxed text-pretty">
+                          {verdict.baseNote}
+                        </p>
+                      )}
                     </>
                   ) : (
                     <>
@@ -160,8 +169,8 @@ export default function ProfilesPage() {
                           : `Sem atividade suficiente ${periodPhrase(data.period)}`}
                       </h2>
                       <p className="text-muted-foreground max-w-3xl text-sm leading-relaxed">
-                        O veredito aparece quando pelo menos um perfil tiver 20 usuários ou mais
-                        com atividade no período. Tente um período maior.
+                        O veredito aparece quando pelo menos um perfil tiver 20 usuários ou mais.
+                        Com menos que isso, use as conclusões de cada dimensão abaixo.
                       </p>
                     </>
                   )}
@@ -233,8 +242,8 @@ export default function ProfilesPage() {
                       <CardTitle>Mapa de calor por {dimension.label.toLowerCase()}</CardTitle>
                       <CardDescription>
                         Cada célula compara o perfil com a média da base: azul está acima, vermelho
-                        abaixo. Toque ou passe o mouse para ver o detalhe e marque dois perfis para
-                        comparar.
+                        abaixo. Toque ou passe o mouse para ver o detalhe, marque dois perfis para
+                        comparar e abra &ldquo;Ver respostas&rdquo; para ler o que cada grupo escreveu.
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4 px-3 sm:px-6">
@@ -244,10 +253,21 @@ export default function ProfilesPage() {
                         selected={selected}
                         highlighted={highlighted}
                         onToggleSelect={toggleSelect}
+                        openGroup={openGroup}
+                        onOpenGroup={(key) => setOpenGroup((k) => (k === key ? null : key))}
                       />
                       <HeatLegend />
                     </CardContent>
                   </Card>
+
+                  {openGroup && (
+                    <GroupDetailPanel
+                      dimension={dimension.key}
+                      groupKey={openGroup}
+                      query={analysisQuery}
+                      onClose={() => setOpenGroup(null)}
+                    />
+                  )}
 
                   <Card className="gap-4">
                     <CardHeader>

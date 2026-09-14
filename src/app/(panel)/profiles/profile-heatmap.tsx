@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, Check } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, MessageSquareText } from "lucide-react";
 import type {
   ProfileDimension,
   ProfileGroupStats,
@@ -37,12 +37,17 @@ export function ProfileHeatmap({
   selected,
   highlighted,
   onToggleSelect,
+  openGroup,
+  onOpenGroup,
 }: {
   dimension: ProfileDimension;
   analysis: ProfilesAnalysis;
   selected: string[];
   highlighted: string | null;
   onToggleSelect: (key: string) => void;
+  /** Grupo com o detalhe aberto. */
+  openGroup: string | null;
+  onOpenGroup: (key: string) => void;
 }) {
   const { base, period } = analysis;
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({
@@ -165,25 +170,42 @@ export function ProfileHeatmap({
                       isSelected ? "bg-muted" : isHighlighted ? "bg-muted" : "bg-card",
                     )}
                   >
-                    <button
-                      type="button"
-                      onClick={() => onToggleSelect(g.key)}
-                      aria-pressed={isSelected}
-                      className="hover:bg-accent focus-visible:ring-ring/50 flex w-full cursor-pointer items-start gap-2 rounded-md px-2 py-1.5 text-left outline-none focus-visible:ring-[3px]"
-                    >
-                      <span
-                        className={cn(
-                          "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded border transition-colors",
-                          isSelected
-                            ? "bg-primary border-primary text-primary-foreground"
-                            : "border-input bg-background group-hover/row:border-muted-foreground/50",
-                        )}
-                        aria-hidden
+                    <div className="flex items-start gap-1">
+                      <button
+                        type="button"
+                        onClick={() => onToggleSelect(g.key)}
+                        aria-pressed={isSelected}
+                        aria-label={`Comparar ${g.label}`}
+                        className="hover:bg-accent focus-visible:ring-ring/50 flex shrink-0 cursor-pointer rounded-md p-2 outline-none focus-visible:ring-[3px]"
                       >
-                        {isSelected && <Check className="size-3" />}
-                      </span>
-                      <span className="min-w-0">
+                        <span
+                          className={cn(
+                            "flex size-4 items-center justify-center rounded border transition-colors",
+                            isSelected
+                              ? "bg-primary border-primary text-primary-foreground"
+                              : "border-input bg-background group-hover/row:border-muted-foreground/50",
+                          )}
+                          aria-hidden
+                        >
+                          {isSelected && <Check className="size-3" />}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => (g.vague ? onOpenGroup(g.key) : onToggleSelect(g.key))}
+                        aria-expanded={g.vague ? openGroup === g.key : undefined}
+                        className={cn(
+                          "hover:bg-accent focus-visible:ring-ring/50 min-w-0 flex-1 cursor-pointer rounded-md py-1.5 pr-2 text-left outline-none focus-visible:ring-[3px]",
+                          openGroup === g.key && "bg-accent",
+                        )}
+                      >
                         <GroupLabel label={g.label} />
+                        {g.vague && (
+                          <span className="text-foreground mt-0.5 inline-flex items-center gap-1 text-xs font-medium underline decoration-dotted underline-offset-2">
+                            <MessageSquareText className="size-3" aria-hidden />
+                            {openGroup === g.key ? "Detalhe aberto" : "Ver respostas"}
+                          </span>
+                        )}
                         <span className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
                           <span className="tabular-nums sm:hidden">
                             {formatNumber(g.users)} · {fmtPct(g.shareOfBase)} → {fmtPct(g.shareOfActiveDays)}
@@ -194,8 +216,8 @@ export function ProfileHeatmap({
                           </span>
                           <ReadingTag reading={reading} />
                         </span>
-                      </span>
-                    </button>
+                      </button>
+                    </div>
                   </th>
                   <td className="hidden border-b px-2 py-1.5 sm:table-cell">
                     <ShareBars

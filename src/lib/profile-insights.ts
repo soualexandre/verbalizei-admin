@@ -90,6 +90,18 @@ const decFmt = new Intl.NumberFormat("pt-BR", {
 export function fmtPct(v: number) {
   return v > 0 && v < 0.01 ? pctFineFmt.format(v) : pctFmt.format(v);
 }
+const countFmt = new Intl.NumberFormat("pt-BR");
+
+/** "foco definido", "persona definida"… com a concordância certa. */
+function definedPhrase(dim: ProfileDimension) {
+  const feminine = ["persona", "obstacle", "seniority", "provider"].includes(dim.key);
+  const noun = dim.key === "provider" ? "forma de cadastro" : dim.label.toLowerCase();
+  return `${noun} ${feminine ? "definida" : "definido"}`;
+}
+function formatCount(v: number) {
+  return countFmt.format(v);
+}
+
 export function fmtDecimal(v: number) {
   return decFmt.format(v);
 }
@@ -216,10 +228,8 @@ function investScore(g: ProfileGroupStats, base: ProfileGroupStats) {
 
 export function pickInvestTarget(dim: ProfileDimension, base: ProfileGroupStats) {
   const { usable } = pool(dim);
-  return maxBy(
-    usable.filter((g) => g.activeUsers >= 3),
-    (g) => investScore(g, base),
-  );
+  // Todo perfil com usuários suficientes na base concorre, tenha uso ou não.
+  return maxBy(usable, (g) => investScore(g, base));
 }
 
 export function buildConclusions(
@@ -240,17 +250,16 @@ export function buildConclusions(
       },
     ];
   }
-  if (base.activeDays === 0) {
-    return [
-      {
-        id: "no-activity",
-        kind: "risk",
-        tag: "Risco",
-        title: `Nenhuma atividade ${periodPhrase(period)}`,
-        body: "Nenhum usuário concluiu lição, treino, prática ou gravação no período, então não dá para comparar acesso entre perfis.",
-        action: "Amplie o período ou verifique se o app está registrando atividades.",
-      },
-    ];
+  const hasActivity = base.activeDays > 0;
+  if (!hasActivity) {
+    out.push({
+      id: "no-activity",
+      kind: "risk",
+      tag: "Risco",
+      title: `Nenhuma atividade ${periodPhrase(period)}`,
+      body: "Nenhum usuário concluiu lição, treino, prática ou gravação, então não dá para comparar acesso entre perfis. As conclusões abaixo usam só a composição da base.",
+      action: "Amplie o período ou verifique se o app está registrando atividades.",
+    });
   }
 
   const { usable, lowConfidence } = pool(dim);
@@ -261,16 +270,11 @@ export function buildConclusions(
   const hasPremium = dim.key !== "plan" && base.premiumRate > 0;
 
   const volume = maxBy(
-    dim.groups.filter(
-      (g) => isTargetable(g) && confidenceOf(g) !== "none" && g.activeDays > 0,
-    ),
+    dim.groups.filter((g) => isTargetable(g) && confidenceOf(g) !== "none"),
     (g) => g.shareOfActiveDays,
   );
   const invest = pickInvestTarget(dim, base);
-  const intensity = maxBy(
-    usable.filter((g) => g.activeUsers >= 3),
-    (g) => g.accessIndex,
-  );
+  const intensity = maxBy(usable, (g) => g.accessIndex);
   // Maior conversão entre os perfis utilizáveis, sem excluir ninguém.
   const converter = hasPremium
     ? maxBy(
@@ -289,7 +293,7 @@ export function buildConclusions(
       : "";
 
   // 1. Priorizar na aquisição (absorve volume quando é o mesmo perfil)
-  if (invest) {
+  if (hasActivity && invest) {
     const leadsVolume = volume?.key === invest.key;
     out.push({
       id: "invest",
@@ -307,7 +311,7 @@ export function buildConclusions(
   }
 
   // 2. Quem mais acessa, quando não é o perfil a priorizar
-  if (volume && volume.key !== invest?.key) {
+  if (hasActivity && volume && volume.key !== invest?.key) {
     out.push({
       id: "volume",
       kind: volume.accessIndex <= 0.95 ? "note" : "positive",
@@ -325,7 +329,12 @@ export function buildConclusions(
   }
 
   // 3. Intensidade, quando não coincide com os anteriores
-  if (intensity && intensity.key !== volume?.key && intensity.key !== invest?.key) {
+  if (
+    hasActivity &&
+    intensity &&
+    intensity.key !== volume?.key &&
+    intensity.key !== invest?.key
+  ) {
     out.push({
       id: "intensity",
       kind: "positive",
@@ -337,6 +346,32 @@ export function buildConclusions(
   }
 
   const equalShare = 1 / Math.max(dim.groups.length, 1);
+  const targetable = dim.groups.filter(isTargetable);
+  const answered = targetable.reduce((sum, g) => sum + g.users, 0);
+
+  // Base inteira · perfil predominante entre todos os cadastrados
+  const largest = maxBy(targetable, (g) => g.users);
+  if (largest && largest.users > 0) {
+    const shareOfAnswered = answered > 0 ? largest.users / answered : 0;
+    const usage = !hasActivity
+      ? ""
+      : largest.key === volume?.key
+        ? " Também é quem mais acessa."
+        : ` ${fmtPct(largest.activationRate)} deles usaram o app ${periodPhrase(period)} (média ${fmtPct(base.activationRate)}).`;
+    out.push({
+      id: "largest",
+      kind: "note",
+      tag: "Maior na base",
+      groupKey: largest.key,
+      title: largest.label,
+      body: `${formatCount(largest.users)} dos ${formatCount(base.users)} usuários cadastrados (${fmtPct(largest.shareOfBase)})${
+        answered < base.users && answered > 0
+          ? `, ou ${fmtPct(shareOfAnswered)} de quem tem ${definedPhrase(dim)}`
+          : ""
+      }.${usage}`,
+    });
+  }
+
   const mentioned = new Set(out.map((c) => c.groupKey));
 
   // 4. Oportunidade: pequeno e intenso
@@ -345,12 +380,11 @@ export function buildConclusions(
       (g) =>
         !mentioned.has(g.key) &&
         g.accessIndex >= 1.2 &&
-        g.shareOfBase < equalShare &&
-        g.activeUsers >= 3,
+        g.shareOfBase < equalShare,
     ),
     (g) => g.accessIndex,
   );
-  if (opportunity) {
+  if (hasActivity && opportunity) {
     out.push({
       id: "opportunity",
       kind: "positive",
@@ -368,7 +402,7 @@ export function buildConclusions(
     usable.filter((g) => g.shareOfBase >= equalShare && g.accessIndex <= 0.8),
     (g) => g.shareOfBase * (1 - g.accessIndex),
   );
-  if (risk) {
+  if (hasActivity && risk) {
     out.push({
       id: "risk",
       kind: "risk",
@@ -378,6 +412,53 @@ export function buildConclusions(
       body: `Cadastra muito e usa pouco: é ${fmtPct(risk.shareOfBase)} da base e só ${fmtPct(risk.shareOfActiveDays)} dos acessos; ${fmtPct(risk.activationRate)} usaram o app no período (média ${fmtPct(base.activationRate)}).`,
       action: "Revise a promessa das campanhas para esse perfil ou a primeira experiência da trilha dele.",
     });
+  }
+
+  // Base inteira · onde estão os usuários que não usam
+  const inactiveTotal = base.users - base.activeUsers;
+  if (inactiveTotal > 0 && base.users > 0) {
+    const inactiveShare = inactiveTotal / base.users;
+    const mostInactive = maxBy(
+      dim.groups.filter((g) => confidenceOf(g) !== "none"),
+      (g) => g.users - g.activeUsers,
+    );
+    const never = period.allTime ? "nunca usaram o app" : `não usaram o app ${periodPhrase(period)}`;
+    if (inactiveShare >= 0.3 && mostInactive) {
+      const inactive = mostInactive.users - mostInactive.activeUsers;
+      out.push({
+        id: "inactive",
+        kind: inactiveShare >= 0.5 ? "risk" : "note",
+        tag: "Base sem uso",
+        groupKey: mostInactive.key,
+        title: `${fmtPct(inactiveShare)} dos usuários ${never}`,
+        body: `São ${formatCount(inactiveTotal)} de ${formatCount(base.users)}. O maior volume está em ${mostInactive.label.toLowerCase()}: ${formatCount(inactive)} usuários, ${fmtPct(inactive / mostInactive.users)} desse perfil.`,
+        action: "Crie uma campanha de reativação começando por esse perfil.",
+      });
+    }
+  }
+
+  // Base inteira · concentração
+  const ranked = [...targetable].sort((a, b) => b.users - a.users);
+  if (answered > 0 && ranked.length >= 4) {
+    const top = ranked.slice(0, 3);
+    const topShare = top.reduce((sum, g) => sum + g.users, 0) / answered;
+    if (topShare >= 0.6) {
+      out.push({
+        id: "concentration",
+        kind: "note",
+        tag: "Base",
+        title: `Base concentrada em ${top.length} perfis`,
+        body: `${top.map((g) => g.label).join(", ")} somam ${fmtPct(topShare)} de quem tem ${definedPhrase(dim)}. Os outros ${ranked.length - top.length} dividem o restante.`,
+      });
+    } else if (ranked[0].users / answered < 0.25) {
+      out.push({
+        id: "concentration",
+        kind: "note",
+        tag: "Base",
+        title: "Base pulverizada",
+        body: `Nenhum perfil passa de ${fmtPct(ranked[0].users / answered)} de quem tem ${definedPhrase(dim)}: a comunicação precisa falar com vários públicos.`,
+      });
+    }
   }
 
   // 6. Maior conversão, quando ainda não foi citada
@@ -394,7 +475,7 @@ export function buildConclusions(
   }
 
   // 7. Tendência em dimensões ordenadas
-  if (dim.ordered) {
+  if (hasActivity && dim.ordered) {
     const known = dim.groups.filter(
       (g) => !g.unknown && confidenceOf(g) !== "none",
     );
@@ -437,7 +518,9 @@ export function buildConclusions(
       tag: "Nota",
       groupKey: unknown.key,
       title: `${fmtPct(unknown.shareOfBase)} da base sem ${isOnboarding ? "perfil definido" : `dado de ${dimName}`}`,
-      body: `Esse grupo (${unknown.label.toLowerCase()}) acessa ${fmtDecimal(unknown.accessIndex)}× a média e fica fora das recomendações acima.`,
+      body: `São ${formatCount(unknown.users)} usuários (${unknown.label.toLowerCase()})${
+        hasActivity ? `, que acessam ${fmtDecimal(unknown.accessIndex)}× a média` : ""
+      }. Ficam fora das recomendações acima.`,
       action: isOnboarding
         ? "Incentive a conclusão do onboarding para enxergar o perfil desses usuários."
         : undefined,
@@ -472,21 +555,41 @@ export interface Verdict {
   invest?: ProfileGroupStats;
   headline: string;
   support: string;
+  /** Leitura da base inteira (todos os cadastrados), independente de uso. */
+  baseNote: string | null;
 }
 
 /** Usa a dimensão mais específica que tiver perfis com amostra suficiente. */
 export function buildVerdict(analysis: ProfilesAnalysis): Verdict | null {
-  if (analysis.base.activeDays === 0) return null;
+  if (analysis.base.users === 0) return null;
+  const hasActivity = analysis.base.activeDays > 0;
   const order = ["persona", "objective", "audience", "segment"];
   for (const key of order) {
     const dim = analysis.dimensions.find((d) => d.key === key);
     if (!dim) continue;
     const confident = dim.groups.filter(
-      (g) => isTargetable(g) && confidenceOf(g) === "high" && g.activeDays > 0,
+      (g) => isTargetable(g) && confidenceOf(g) === "high",
     );
     if (confident.length === 0) continue;
+    const largest = maxBy(confident, (g) => g.users)!;
+    const baseTotal = countFmt.format(analysis.base.users);
+
+    if (!hasActivity) {
+      return {
+        dimension: dim,
+        leader: largest,
+        headline: `${largest.label}: ${fmtPct(largest.shareOfBase)} dos ${baseTotal} usuários.`,
+        support: `Ninguém usou o app ${periodPhrase(analysis.period)}, então não há acesso para comparar. Este é o perfil mais numeroso da base.`,
+        baseNote: null,
+      };
+    }
+
     const leader = maxBy(confident, (g) => g.shareOfActiveDays)!;
     const invest = pickInvestTarget(dim, analysis.base);
+    const baseNote =
+      largest.key === leader.key
+        ? `Na base inteira, é também o perfil mais numeroso: ${fmtPct(largest.shareOfBase)} dos ${baseTotal} usuários cadastrados.`
+        : `Na base inteira, o perfil mais numeroso é ${largest.label}: ${fmtPct(largest.shareOfBase)} dos ${baseTotal} usuários cadastrados, ${fmtPct(largest.activationRate)} deles com uso ${periodPhrase(analysis.period)}.`;
 
     const headline = `${leader.label}: ${fmtPct(leader.shareOfBase)} da base, ${fmtPct(leader.shareOfActiveDays)} dos acessos.`;
     const period = capitalize(periodPhrase(analysis.period));
@@ -503,7 +606,7 @@ export function buildVerdict(analysis: ProfilesAnalysis): Verdict | null {
           : ""
       }.`;
     }
-    return { dimension: dim, leader, invest, headline, support };
+    return { dimension: dim, leader, invest, headline, support, baseNote };
   }
   return null;
 }

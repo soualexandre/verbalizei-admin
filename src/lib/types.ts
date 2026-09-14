@@ -322,6 +322,41 @@ export interface ProfileGroupStats {
   premiumRate: number;
   /** Usuários que entraram no grupo pelo perfil inferido. */
   inferredUsers: number;
+  /** Sem resposta clara ("Outro", texto livre, sem dado): pode ser detalhado. */
+  vague: boolean;
+}
+
+export type AnswerField = "objective" | "audience" | "obstacle";
+
+export interface ProfileGroupDetail {
+  dimension: { key: ProfileDimensionKey; label: string };
+  group: { key: string; label: string; users: number; vague: boolean };
+  period: { allTime: boolean; days: number };
+  writtenUsers: number;
+  texts: Array<{
+    field: AnswerField | "persona";
+    fieldLabel: string;
+    text: string;
+    users: number;
+  }>;
+  data: Array<{
+    id: string;
+    name: string | null;
+    email: string;
+    createdAt: string;
+    activeDays: number;
+    onboardingCompleted: boolean;
+    declaredSegment: string | null;
+    declaredSegmentLabel: string | null;
+    answers: Record<AnswerField, { raw: string; label: string | null; written: boolean } | null>;
+    inferred: {
+      segmentLabel: string | null;
+      occupation: string | null;
+      summary: string | null;
+      confidence: number | null;
+    } | null;
+  }>;
+  meta: { total: number; page: number; limit: number; totalPages: number };
 }
 
 export interface ProfileDimension {
