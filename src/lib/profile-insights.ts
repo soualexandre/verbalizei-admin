@@ -23,7 +23,7 @@ export interface MetricDef {
   key: MetricKey;
   label: string;
   short: string;
-  help: (recurringThreshold: number, days: number) => string;
+  help: (period: ProfilesAnalysis["period"]) => string;
   format: (g: ProfileGroupStats) => string;
 }
 
@@ -40,7 +40,10 @@ export const METRICS: MetricDef[] = [
     key: "activationRate",
     label: "Ativação",
     short: "Ativos",
-    help: (_, days) => `Usuários com ao menos 1 dia de atividade nos últimos ${days} dias.`,
+    help: (p) =>
+      p.allTime
+        ? "Usuários com ao menos 1 dia de atividade desde o cadastro."
+        : `Usuários com ao menos 1 dia de atividade nos últimos ${p.days} dias.`,
     format: (g) => fmtPct(g.activationRate),
   },
   {
@@ -54,8 +57,10 @@ export const METRICS: MetricDef[] = [
     key: "recurringRate",
     label: "Recorrência",
     short: "Recorrentes",
-    help: (threshold) =>
-      `Usuários ativos em ${threshold} dias ou mais no período (~1 vez por semana).`,
+    help: (p) =>
+      p.recurringThreshold == null
+        ? "Usuários ativos em média 1 dia por semana desde o próprio cadastro."
+        : `Usuários ativos em ${p.recurringThreshold} dias ou mais no período (~1 vez por semana).`,
     format: (g) => fmtPct(g.recurringRate),
   },
   {
@@ -91,6 +96,15 @@ export function fmtDecimal(v: number) {
 function fmtPp(a: number, b: number) {
   const diff = Math.round((a - b) * 100);
   return `${diff > 0 ? "+" : ""}${diff} p.p.`;
+}
+
+/** "nos últimos 30 dias" ou "em todo o período". */
+export function periodPhrase(period: ProfilesAnalysis["period"]) {
+  return period.allTime ? "em todo o período" : `nos últimos ${period.days} dias`;
+}
+
+function capitalize(text: string) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 // ─── Classificação ───────────────────────────────────────────────────────────
@@ -232,7 +246,7 @@ export function buildConclusions(
         id: "no-activity",
         kind: "risk",
         tag: "Risco",
-        title: `Nenhuma atividade nos últimos ${period.days} dias`,
+        title: `Nenhuma atividade ${periodPhrase(period)}`,
         body: "Nenhum usuário concluiu lição, treino, prática ou gravação no período, então não dá para comparar acesso entre perfis.",
         action: "Amplie o período ou verifique se o app está registrando atividades.",
       },
@@ -475,7 +489,7 @@ export function buildVerdict(analysis: ProfilesAnalysis): Verdict | null {
     const invest = pickInvestTarget(dim, analysis.base);
 
     const headline = `${leader.label}: ${fmtPct(leader.shareOfBase)} da base, ${fmtPct(leader.shareOfActiveDays)} dos acessos.`;
-    const period = `Nos últimos ${analysis.period.days} dias`;
+    const period = capitalize(periodPhrase(analysis.period));
     let support: string;
     if (!invest || invest.key === leader.key) {
       support =
@@ -508,7 +522,7 @@ export function compareGroups(
   a: ProfileGroupStats,
   b: ProfileGroupStats,
   base: ProfileGroupStats,
-  recurringThreshold: number,
+  period: ProfilesAnalysis["period"],
 ): { lines: ComparisonLine[]; bottomLine: string } {
   const lines: ComparisonLine[] = [];
 
@@ -577,7 +591,9 @@ export function compareGroups(
     "dias de uso por ativo",
   );
   ppLine(
-    `Recorrência (${recurringThreshold}+ dias)`,
+    period.recurringThreshold == null
+      ? "Recorrência (1×/semana)"
+      : `Recorrência (${period.recurringThreshold}+ dias)`,
     a.recurringRate,
     b.recurringRate,
     "recorrência",

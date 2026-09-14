@@ -334,7 +334,15 @@ export interface ProfileDimension {
 
 export interface ProfilesAnalysis {
   generatedAt: string;
-  period: { days: number; from: string; to: string; recurringThreshold: number };
+  period: {
+    /** Análise sobre toda a história da plataforma. */
+    allTime: boolean;
+    days: number;
+    from: string;
+    to: string;
+    /** null em todo o período: recorrente = 1 dia ativo por semana desde o cadastro. */
+    recurringThreshold: number | null;
+  };
   includeMocks: boolean;
   includeInferred: boolean;
   inferredUsers: number;

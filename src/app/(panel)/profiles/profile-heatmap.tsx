@@ -13,6 +13,7 @@ import {
   READING_LABEL,
   confidenceOf,
   fmtPct,
+  periodPhrase,
   ratioToBase,
   readingOf,
   type MetricKey,
@@ -97,7 +98,7 @@ export function ProfileHeatmap({
       <div className="overflow-x-auto">
         <table className="w-full min-w-[560px] sm:min-w-[640px] border-separate border-spacing-0 text-sm">
           <caption className="sr-only">
-            {`Perfis por ${dimension.label.toLowerCase()}, comparados com a média da base nos últimos ${period.days} dias`}
+            {`Perfis por ${dimension.label.toLowerCase()}, comparados com a média da base ${periodPhrase(period)}`}
           </caption>
           <thead>
             <tr className="text-muted-foreground text-left text-xs">
@@ -126,7 +127,7 @@ export function ProfileHeatmap({
                   key={m.key}
                   scope="col"
                   className="border-b px-1 pb-2 text-center font-medium"
-                  title={m.help(period.recurringThreshold, period.days)}
+                  title={m.help(period)}
                 >
                   <SortButton
                     label={m.short}
@@ -236,7 +237,7 @@ export function ProfileHeatmap({
                                 m.key === "accessIndex"
                                   ? describeIndex(g.accessIndex)
                                   : `Média da base: ${m.format(base)} · ${describeRatio(ratio)}`,
-                                m.help(period.recurringThreshold, period.days),
+                                m.help(period),
                                 ...(faded
                                   ? [
                                       g.unknown

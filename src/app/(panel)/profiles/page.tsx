@@ -12,8 +12,9 @@ import {
   buildVerdict,
   fmtDecimal,
   fmtPct,
+  periodPhrase,
 } from "@/lib/profile-insights";
-import { formatDateTime, formatNumber } from "@/lib/utils";
+import { formatDate, formatDateTime, formatNumber } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -30,10 +31,15 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HeatLegend, ProfileHeatmap } from "./profile-heatmap";
 import { ComparePanel, ConclusionsList } from "./insight-panels";
 
-const PERIODS = [7, 30, 90] as const;
+const PERIODS = [
+  { value: "7", label: "7 dias" },
+  { value: "30", label: "30 dias" },
+  { value: "90", label: "90 dias" },
+  { value: "all", label: "Todo o período" },
+] as const;
 
 export default function ProfilesPage() {
-  const [days, setDays] = useState<number>(30);
+  const [days, setDays] = useState<string>("30");
   const [includeMocks, setIncludeMocks] = useState(false);
   const [includeInferred, setIncludeInferred] = useState(true);
   const [dimensionKey, setDimensionKey] = useState<ProfileDimensionKey>("persona");
@@ -80,11 +86,11 @@ export default function ProfilesPage() {
         description="Quem mais acessa o Verbalizei e qual perfil vale mais atrair."
       >
         <div className="flex flex-wrap items-center gap-4">
-          <Tabs value={String(days)} onValueChange={(v) => setDays(Number(v))}>
+          <Tabs value={days} onValueChange={setDays}>
             <TabsList aria-label="Período">
               {PERIODS.map((p) => (
-                <TabsTrigger key={p} value={String(p)}>
-                  {p} dias
+                <TabsTrigger key={p.value} value={p.value}>
+                  {p.label}
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -151,7 +157,7 @@ export default function ProfilesPage() {
                       <h2 id="verdict-title" className="text-xl font-semibold tracking-tight">
                         {data.base.users === 0
                           ? "Ainda não há usuários para analisar"
-                          : `Sem atividade suficiente nos últimos ${data.period.days} dias`}
+                          : `Sem atividade suficiente ${periodPhrase(data.period)}`}
                       </h2>
                       <p className="text-muted-foreground max-w-3xl text-sm leading-relaxed">
                         O veredito aparece quando pelo menos um perfil tiver 20 usuários ou mais
@@ -165,7 +171,7 @@ export default function ProfilesPage() {
               <dl className="text-muted-foreground flex flex-wrap gap-x-6 gap-y-1 px-1 text-sm">
                 <BaseFact label="usuários analisados" value={formatNumber(data.base.users)} />
                 <BaseFact
-                  label={`ativos em ${data.period.days} dias`}
+                  label={data.period.allTime ? "já usaram o app" : `ativos em ${data.period.days} dias`}
                   value={fmtPct(data.base.activationRate)}
                 />
                 <BaseFact
@@ -193,7 +199,10 @@ export default function ProfilesPage() {
                 )}
                 <div className="flex gap-1">
                   <dt className="sr-only">Atualizado em</dt>
-                  <dd>Atualizado {formatDateTime(data.generatedAt)}</dd>
+                  <dd>
+                    {data.period.allTime && `Desde ${formatDate(data.period.from)} · `}
+                    Atualizado {formatDateTime(data.generatedAt)}
+                  </dd>
                 </div>
               </dl>
             </section>
@@ -270,7 +279,7 @@ export default function ProfilesPage() {
                         <div key={m.key}>
                           <dt className="font-medium">{m.label}</dt>
                           <dd className="text-muted-foreground">
-                            {m.help(data.period.recurringThreshold, data.period.days)}
+                            {m.help(data.period)}
                           </dd>
                         </div>
                       ))}

@@ -131,7 +131,7 @@ export function ComparePanel({
     a,
     b,
     analysis.base,
-    analysis.period.recurringThreshold,
+    analysis.period,
   );
 
   return (
