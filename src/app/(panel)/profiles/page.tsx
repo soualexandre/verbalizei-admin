@@ -12,7 +12,6 @@ import {
   buildVerdict,
   fmtDecimal,
   fmtPct,
-  periodPhrase,
 } from "@/lib/profile-insights";
 import { formatDate, formatDateTime, formatNumber } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
@@ -160,19 +159,16 @@ export default function ProfilesPage() {
                           {verdict.baseNote}
                         </p>
                       )}
+                      {verdict.caveat && (
+                        <p className="text-muted-foreground max-w-3xl text-sm leading-relaxed text-pretty">
+                          {verdict.caveat}
+                        </p>
+                      )}
                     </>
                   ) : (
-                    <>
-                      <h2 id="verdict-title" className="text-xl font-semibold tracking-tight">
-                        {data.base.users === 0
-                          ? "Ainda não há usuários para analisar"
-                          : `Sem atividade suficiente ${periodPhrase(data.period)}`}
-                      </h2>
-                      <p className="text-muted-foreground max-w-3xl text-sm leading-relaxed">
-                        O veredito aparece quando pelo menos um perfil tiver 20 usuários ou mais.
-                        Com menos que isso, use as conclusões de cada dimensão abaixo.
-                      </p>
-                    </>
+                    <h2 id="verdict-title" className="text-xl font-semibold tracking-tight">
+                      Ainda não há usuários para analisar
+                    </h2>
                   )}
                 </CardContent>
               </Card>

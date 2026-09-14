@@ -409,7 +409,7 @@ export function buildConclusions(
       tag: "Risco",
       groupKey: risk.key,
       title: risk.label,
-      body: `Cadastra muito e usa pouco: é ${fmtPct(risk.shareOfBase)} da base e só ${fmtPct(risk.shareOfActiveDays)} dos acessos; ${fmtPct(risk.activationRate)} usaram o app no período (média ${fmtPct(base.activationRate)}).`,
+      body: `Cadastra muito e usa pouco: é ${fmtPct(risk.shareOfBase)} da base e só ${fmtPct(risk.shareOfActiveDays)} dos acessos; ${fmtPct(risk.activationRate)} usaram o app ${periodPhrase(period)} (média ${fmtPct(base.activationRate)}).`,
       action: "Revise a promessa das campanhas para esse perfil ou a primeira experiência da trilha dele.",
     });
   }
@@ -448,7 +448,11 @@ export function buildConclusions(
         kind: "note",
         tag: "Base",
         title: `Base concentrada em ${top.length} perfis`,
-        body: `${top.map((g) => g.label).join(", ")} somam ${fmtPct(topShare)} de quem tem ${definedPhrase(dim)}. Os outros ${ranked.length - top.length} dividem o restante.`,
+        body: `${top.map((g) => g.label).join(", ")} somam ${fmtPct(topShare)} de quem tem ${definedPhrase(dim)}. ${
+          ranked.length - top.length === 1
+            ? "O outro perfil fica com o restante."
+            : `Os outros ${ranked.length - top.length} dividem o restante.`
+        }`,
       });
     } else if (ranked[0].users / answered < 0.25) {
       out.push({
@@ -557,58 +561,108 @@ export interface Verdict {
   support: string;
   /** Leitura da base inteira (todos os cadastrados), independente de uso. */
   baseNote: string | null;
+  /** Aviso quando o veredito se apoia em perfis com poucos usuários. */
+  caveat: string | null;
 }
 
-/** Usa a dimensão mais específica que tiver perfis com amostra suficiente. */
+/**
+ * Sempre devolve um veredito quando há usuários. Prefere a dimensão mais
+ * específica com perfis de amostra suficiente; sem isso, usa a dimensão mais
+ * ampla que tiver algum perfil respondido e avisa que é tendência; sem nenhum
+ * perfil respondido, fala da base como um todo.
+ */
 export function buildVerdict(analysis: ProfilesAnalysis): Verdict | null {
-  if (analysis.base.users === 0) return null;
-  const hasActivity = analysis.base.activeDays > 0;
-  const order = ["persona", "objective", "audience", "segment"];
-  for (const key of order) {
-    const dim = analysis.dimensions.find((d) => d.key === key);
+  const { base } = analysis;
+  if (base.users === 0) return null;
+  const find = (key: string) => analysis.dimensions.find((d) => d.key === key);
+
+  // 1ª tentativa: perfis com amostra suficiente, do mais específico ao mais amplo.
+  for (const key of ["persona", "objective", "audience", "segment"]) {
+    const dim = find(key);
     if (!dim) continue;
-    const confident = dim.groups.filter(
-      (g) => isTargetable(g) && confidenceOf(g) === "high",
-    );
-    if (confident.length === 0) continue;
-    const largest = maxBy(confident, (g) => g.users)!;
-    const baseTotal = countFmt.format(analysis.base.users);
-
-    if (!hasActivity) {
-      return {
-        dimension: dim,
-        leader: largest,
-        headline: `${largest.label}: ${fmtPct(largest.shareOfBase)} dos ${baseTotal} usuários.`,
-        support: `Ninguém usou o app ${periodPhrase(analysis.period)}, então não há acesso para comparar. Este é o perfil mais numeroso da base.`,
-        baseNote: null,
-      };
-    }
-
-    const leader = maxBy(confident, (g) => g.shareOfActiveDays)!;
-    const invest = pickInvestTarget(dim, analysis.base);
-    const baseNote =
-      largest.key === leader.key
-        ? `Na base inteira, é também o perfil mais numeroso: ${fmtPct(largest.shareOfBase)} dos ${baseTotal} usuários cadastrados.`
-        : `Na base inteira, o perfil mais numeroso é ${largest.label}: ${fmtPct(largest.shareOfBase)} dos ${baseTotal} usuários cadastrados, ${fmtPct(largest.activationRate)} deles com uso ${periodPhrase(analysis.period)}.`;
-
-    const headline = `${leader.label}: ${fmtPct(leader.shareOfBase)} da base, ${fmtPct(leader.shareOfActiveDays)} dos acessos.`;
-    const period = capitalize(periodPhrase(analysis.period));
-    let support: string;
-    if (!invest || invest.key === leader.key) {
-      support =
-        leader.accessIndex >= 1.05
-          ? `${period}, foi o perfil que mais acessou e é também o que mais vale atrair: cada usuário usa ${fmtDecimal(leader.accessIndex)}× a média da base.`
-          : `${period}, foi o perfil que mais acessou, mas pelo tamanho: cada usuário usa ${fmtDecimal(leader.accessIndex)}× a média. Nenhum outro perfil se destaca em intensidade.`;
-    } else {
-      support = `${period}, foi quem mais acessou no total, mas quem vale mais atrair é ${invest.label}: cada usuário usa ${fmtDecimal(invest.accessIndex)}× a média${
-        analysis.base.premiumRate > 0
-          ? ` e converte ${fmtPct(invest.premiumRate)} para premium`
-          : ""
-      }.`;
-    }
-    return { dimension: dim, leader, invest, headline, support, baseNote };
+    const groups = dim.groups.filter((g) => isTargetable(g) && confidenceOf(g) === "high");
+    if (groups.length > 0) return verdictFrom(dim, groups, analysis, null);
   }
-  return null;
+
+  // 2ª tentativa: base pequena. Dimensões amplas primeiro, que juntam mais gente por perfil.
+  for (const key of ["segment", "objective", "audience", "persona"]) {
+    const dim = find(key);
+    if (!dim) continue;
+    const groups = dim.groups.filter((g) => isTargetable(g) && g.users > 0);
+    if (groups.length === 0) continue;
+    const biggest = Math.max(...groups.map((g) => g.users));
+    return verdictFrom(
+      dim,
+      groups,
+      analysis,
+      `Amostra pequena: o maior perfil tem ${countFmt.format(biggest)} ${
+        biggest === 1 ? "usuário" : "usuários"
+      } (o ideal é ${MIN_CONFIDENT_USERS} ou mais). Trate como tendência e confirme conforme a base crescer.`,
+    );
+  }
+
+  // Ninguém tem perfil respondido: veredito sobre a base.
+  const dim = find("segment") ?? analysis.dimensions[0];
+  const everyone: ProfileGroupStats = { ...base, label: "Toda a base" };
+  const used = analysis.period.allTime
+    ? "já usaram o app"
+    : `usaram o app ${periodPhrase(analysis.period)}`;
+  return {
+    dimension: dim,
+    leader: everyone,
+    headline: `${countFmt.format(base.users)} usuários, nenhum com perfil definido ainda.`,
+    support: `${fmtPct(base.activationRate)} ${used}${
+      base.activeUsers > 0 ? `, com ${fmtDecimal(base.daysPerActiveUser)} dias de uso por ativo` : ""
+    }. Sem as respostas do onboarding não dá para dizer qual perfil acessa mais.`,
+    baseNote: null,
+    caveat: "Rode o enriquecimento para inferir o perfil de quem não respondeu o onboarding.",
+  };
+}
+
+function verdictFrom(
+  dim: ProfileDimension,
+  groups: ProfileGroupStats[],
+  analysis: ProfilesAnalysis,
+  caveat: string | null,
+): Verdict {
+  const { base, period } = analysis;
+  const largest = maxBy(groups, (g) => g.users)!;
+  const baseTotal = countFmt.format(base.users);
+
+  if (base.activeDays === 0) {
+    return {
+      dimension: dim,
+      leader: largest,
+      headline: `${largest.label}: ${fmtPct(largest.shareOfBase)} dos ${baseTotal} usuários.`,
+      support: `Ninguém usou o app ${periodPhrase(period)}, então não há acesso para comparar. Este é o perfil mais numeroso da base.`,
+      baseNote: null,
+      caveat,
+    };
+  }
+
+  const leader = maxBy(groups, (g) => g.shareOfActiveDays)!;
+  const invest = pickInvestTarget(dim, base);
+  const headline = `${leader.label}: ${fmtPct(leader.shareOfBase)} da base, ${fmtPct(leader.shareOfActiveDays)} dos acessos.`;
+  const when = capitalize(periodPhrase(period));
+
+  let support: string;
+  if (!invest || invest.key === leader.key) {
+    support =
+      leader.accessIndex >= 1.05
+        ? `${when}, foi o perfil que mais acessou e é também o que mais vale atrair: cada usuário usa ${fmtDecimal(leader.accessIndex)}× a média da base.`
+        : `${when}, foi o perfil que mais acessou, mas pelo tamanho: cada usuário usa ${fmtDecimal(leader.accessIndex)}× a média. Nenhum outro perfil se destaca em intensidade.`;
+  } else {
+    support = `${when}, foi quem mais acessou no total, mas quem vale mais atrair é ${invest.label}: cada usuário usa ${fmtDecimal(invest.accessIndex)}× a média${
+      base.premiumRate > 0 ? ` e converte ${fmtPct(invest.premiumRate)} para premium` : ""
+    }.`;
+  }
+
+  const baseNote =
+    largest.key === leader.key
+      ? `Na base inteira, é também o perfil mais numeroso: ${fmtPct(largest.shareOfBase)} dos ${baseTotal} usuários cadastrados.`
+      : `Na base inteira, o perfil mais numeroso é ${largest.label}: ${fmtPct(largest.shareOfBase)} dos ${baseTotal} usuários cadastrados, ${fmtPct(largest.activationRate)} deles com uso ${periodPhrase(period)}.`;
+
+  return { dimension: dim, leader, invest, headline, support, baseNote, caveat };
 }
 
 // ─── Comparação lado a lado ──────────────────────────────────────────────────
