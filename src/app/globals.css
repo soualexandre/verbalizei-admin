@@ -36,6 +36,10 @@
   --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
   --sidebar-border: oklch(0.92 0.004 286.32);
   --sidebar-ring: oklch(0.705 0.015 286.067);
+  /* Mapa de calor divergente: abaixo da média ← cinza → acima da média */
+  --heat-pos: #7fb0ee;
+  --heat-neg: #f0a29b;
+  --heat-mid: oklch(0.955 0.004 286);
 }
 
 .dark {
@@ -70,6 +74,9 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.552 0.016 285.938);
+  --heat-pos: #1c5cab;
+  --heat-neg: #a8403b;
+  --heat-mid: oklch(0.3 0.006 286);
 }
 
 @theme inline {

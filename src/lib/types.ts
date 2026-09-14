@@ -284,3 +284,57 @@ export interface LessonChallengeLink {
   order: number;
   challenge?: Challenge;
 }
+
+// ─── Perfis ──────────────────────────────────────────────────────────────────
+
+export type ProfileDimensionKey =
+  | "persona"
+  | "objective"
+  | "audience"
+  | "obstacle"
+  | "segment"
+  | "plan"
+  | "seniority"
+  | "tenure"
+  | "device"
+  | "provider";
+
+export interface ProfileGroupStats {
+  key: string;
+  label: string;
+  /** Grupo sem informação (ex.: sem onboarding). */
+  unknown: boolean;
+  users: number;
+  activeUsers: number;
+  activeDays: number;
+  recurringUsers: number;
+  premiumUsers: number;
+  newUsers: number;
+  avgStreak: number;
+  /** Frações 0..1 */
+  shareOfBase: number;
+  shareOfActiveDays: number;
+  /** shareOfActiveDays / shareOfBase — 1 = média */
+  accessIndex: number;
+  activationRate: number;
+  daysPerActiveUser: number;
+  recurringRate: number;
+  premiumRate: number;
+}
+
+export interface ProfileDimension {
+  key: ProfileDimensionKey;
+  label: string;
+  description: string;
+  ordered: boolean;
+  groups: ProfileGroupStats[];
+}
+
+export interface ProfilesAnalysis {
+  generatedAt: string;
+  period: { days: number; from: string; to: string; recurringThreshold: number };
+  includeMocks: boolean;
+  base: ProfileGroupStats;
+  onboardedRate: number;
+  dimensions: ProfileDimension[];
+}

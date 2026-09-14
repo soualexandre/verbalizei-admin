@@ -10,6 +10,7 @@ import {
   Sparkles,
   LogOut,
   Mic,
+  Fingerprint,
 } from "lucide-react";
 import { cn, initials } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
@@ -20,6 +21,7 @@ const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/insights", label: "Insights IA", icon: Sparkles },
   { href: "/users", label: "Usuários", icon: Users },
+  { href: "/profiles", label: "Perfis", icon: Fingerprint },
   { href: "/curriculum", label: "Currículo", icon: GraduationCap },
   { href: "/broadcast", label: "Broadcast", icon: Megaphone },
 ];
