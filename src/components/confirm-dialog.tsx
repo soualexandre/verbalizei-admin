@@ -20,6 +20,7 @@ export function ConfirmDialog({
   confirmLabel = "Confirmar",
   variant = "default",
   onConfirm,
+  children,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -28,6 +29,8 @@ export function ConfirmDialog({
   confirmLabel?: string;
   variant?: "default" | "destructive";
   onConfirm: () => Promise<void> | void;
+  /** Optional extra content rendered between the header and the footer. */
+  children?: React.ReactNode;
 }) {
   const [loading, setLoading] = useState(false);
 
@@ -48,6 +51,7 @@ export function ConfirmDialog({
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
+        {children}
         <DialogFooter>
           <Button
             variant="outline"

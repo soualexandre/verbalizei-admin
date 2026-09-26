@@ -25,6 +25,7 @@ const ANSWER_LABEL: Record<AnswerField, string> = {
   objective: "Foco",
   audience: "Papel",
   obstacle: "Dificuldade",
+  careerStage: "Momento",
 };
 
 export function GroupDetailPanel({
@@ -234,7 +235,13 @@ export function GroupDetailPanel({
                               <p className="text-muted-foreground text-xs">
                                 {u.declaredSegmentLabel ?? "Sem segmento"}
                                 {!u.onboardingCompleted && " · sem onboarding"}
+                                {u.onboardingSkipped && " · pulou perguntas"}
                               </p>
+                              {u.firstRoom && (
+                                <p className="text-muted-foreground truncate text-xs">
+                                  1ª sala: {u.firstRoom}
+                                </p>
+                              )}
                             </td>
                             <td className="px-3 py-2.5">
                               <Answers answers={u.answers} />

@@ -306,7 +306,7 @@ export default function ProfilesPage() {
                           {data.includeMocks ? ", incluindo mocks" : ", sem mocks"}. Datas no
                           fuso de Brasília.
                           {data.includeInferred
-                            ? " Quem não respondeu o onboarding, respondeu “Outro” ou está sem segmento entra pelo perfil inferido (confiança de 50% ou mais); o que o usuário declarou sempre vence."
+                            ? " Quem não respondeu o onboarding, respondeu “Outro” ou está sem segmento entra pelo perfil inferido (confiança de 50% ou mais); o que o usuário declarou sempre vence. O momento de carreira não é inferido."
                             : " Só respostas declaradas pelo usuário."}
                         </dd>
                       </div>

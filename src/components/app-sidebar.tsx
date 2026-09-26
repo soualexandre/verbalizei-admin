@@ -12,6 +12,7 @@ import {
   Mic,
   Fingerprint,
   WandSparkles,
+  Gauge,
 } from "lucide-react";
 import { cn, initials } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
@@ -24,6 +25,7 @@ const NAV = [
   { href: "/users", label: "Usuários", icon: Users },
   { href: "/profiles", label: "Perfis", icon: Fingerprint },
   { href: "/enrichment", label: "Enriquecimento", icon: WandSparkles },
+  { href: "/training-quota", label: "Cota de treinos", icon: Gauge },
   { href: "/curriculum", label: "Currículo", icon: GraduationCap },
   { href: "/broadcast", label: "Broadcast", icon: Megaphone },
 ];

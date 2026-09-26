@@ -292,6 +292,7 @@ export type ProfileDimensionKey =
   | "objective"
   | "audience"
   | "obstacle"
+  | "careerStage"
   | "segment"
   | "plan"
   | "seniority"
@@ -326,7 +327,7 @@ export interface ProfileGroupStats {
   vague: boolean;
 }
 
-export type AnswerField = "objective" | "audience" | "obstacle";
+export type AnswerField = "objective" | "audience" | "obstacle" | "careerStage";
 
 export interface ProfileGroupDetail {
   dimension: { key: ProfileDimensionKey; label: string };
@@ -349,6 +350,10 @@ export interface ProfileGroupDetail {
     declaredSegment: string | null;
     declaredSegmentLabel: string | null;
     answers: Record<AnswerField, { raw: string; label: string | null; written: boolean } | null>;
+    /** Slug do cenário da primeira sala (onboarding web). */
+    firstRoom: string | null;
+    /** Pulou parte do onboarding web. */
+    onboardingSkipped: boolean;
     inferred: {
       segmentLabel: string | null;
       occupation: string | null;
@@ -505,4 +510,113 @@ export interface UserEnrichmentDetail {
   declaredSegment: UserSegment | null;
   enrichment: (ProfileEnrichment & { signals: EnrichmentSignals | null }) | null;
   canApply: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Training quota (contract: verbalizei-api/docs/cota-de-treinos.md)
+// ---------------------------------------------------------------------------
+
+export type QuotaPeriod = "WEEK" | "MONTH";
+
+export interface TrainingQuotaStatus {
+  /** Valid PREMIUM or ADMIN. When true, remaining is null and limit/bonus/used are 0. */
+  unlimited: boolean;
+  plan: UserPlan;
+  period: QuotaPeriod;
+  /** "2026-W39" | "2026-09" */
+  periodKey: string;
+  periodStart: string;
+  /** Start of the next period. */
+  resetsAt: string;
+  /** From the policy, without bonus. */
+  limit: number;
+  /** Extra trainings granted in this period. */
+  bonus: number;
+  used: number;
+  remaining: number | null;
+}
+
+export interface QuotaPersonRef {
+  id: string;
+  name: string | null;
+  email: string;
+}
+
+export interface TrainingQuotaPolicy {
+  plan: "FREE";
+  limit: number;
+  period: QuotaPeriod;
+  updatedAt: string | null;
+  updatedBy: QuotaPersonRef | null;
+  isDefault: boolean;
+}
+
+export interface TrainingQuotaCurrentPeriod {
+  periodKey: string;
+  periodStart: string;
+  resetsAt: string;
+  consumed: number;
+  activeUsers: number;
+  usersAtLimit: number;
+}
+
+export interface AdminTrainingQuota {
+  policy: TrainingQuotaPolicy;
+  current: TrainingQuotaCurrentPeriod;
+}
+
+export interface UpdateTrainingQuotaPayload {
+  limit: number;
+  period: QuotaPeriod;
+  reason: string;
+}
+
+export type TrainingQuotaAuditAction = "POLICY_UPDATED" | "GRANT_CREATED";
+
+export interface TrainingQuotaAuditItem {
+  id: string;
+  action: TrainingQuotaAuditAction | (string & {});
+  actor: QuotaPersonRef;
+  targetUser: QuotaPersonRef | null;
+  before: unknown;
+  after: unknown;
+  reason: string | null;
+  createdAt: string;
+}
+
+export interface TrainingQuotaAuditPage {
+  items: TrainingQuotaAuditItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface TrainingQuotaUsageItem {
+  id: string;
+  sessionId: string | null;
+  scenarioTitle: string | null;
+  periodKey: string;
+  createdAt: string;
+}
+
+export interface TrainingQuotaGrantItem {
+  id: string;
+  amount: number;
+  reason: string;
+  periodKey: string;
+  grantedBy: QuotaPersonRef;
+  createdAt: string;
+}
+
+export interface UserTrainingQuota {
+  status: TrainingQuotaStatus;
+  /** Last 50. */
+  usages: TrainingQuotaUsageItem[];
+  /** Last 20. */
+  grants: TrainingQuotaGrantItem[];
+}
+
+export interface CreateTrainingQuotaGrantPayload {
+  amount: number;
+  reason: string;
 }

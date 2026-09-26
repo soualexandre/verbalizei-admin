@@ -515,7 +515,9 @@ export function buildConclusions(
   // 8. Sem informação
   const unknown = dim.groups.find((g) => g.unknown);
   if (unknown && unknown.shareOfBase >= 0.15) {
-    const isOnboarding = ["persona", "objective", "audience", "obstacle", "segment"].includes(dim.key);
+    const isOnboarding = ["persona", "objective", "audience", "obstacle", "careerStage", "segment"].includes(
+      dim.key,
+    );
     out.push({
       id: "unknown",
       kind: "note",
@@ -525,9 +527,12 @@ export function buildConclusions(
       body: `São ${formatCount(unknown.users)} usuários (${unknown.label.toLowerCase()})${
         hasActivity ? `, que acessam ${fmtDecimal(unknown.accessIndex)}× a média` : ""
       }. Ficam fora das recomendações acima.`,
-      action: isOnboarding
-        ? "Incentive a conclusão do onboarding para enxergar o perfil desses usuários."
-        : undefined,
+      action:
+        dim.key === "careerStage"
+          ? "O momento de carreira só é perguntado no onboarding web; quem entrou pelo app ou antes dele fica sem resposta."
+          : isOnboarding
+            ? "Incentive a conclusão do onboarding para enxergar o perfil desses usuários."
+            : undefined,
     });
   }
 

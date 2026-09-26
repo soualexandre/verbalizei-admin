@@ -9,6 +9,7 @@ import type { UserDetail, UserEnrichmentDetail } from "@/lib/types";
 import { formatDateTime } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { EnrichmentActions } from "@/components/enrichment-actions";
+import { TrainingQuotaCard } from "@/components/training-quota-card";
 import {
   ConfidenceMeter,
   EnrichmentProfile,
@@ -81,6 +82,8 @@ export default function UserDetailPage({
               )}
             </CardContent>
           </Card>
+
+          <TrainingQuotaCard userId={id} />
 
           <InferredProfileCard userId={id} />
 
