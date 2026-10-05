@@ -39,18 +39,20 @@ export function EditUserDialog({
   const [plan, setPlan] = useState<UserPlan>("FREE");
   const [role, setRole] = useState<UserRole>("USER");
   const [isActive, setIsActive] = useState(true);
+  const [meetingsBeta, setMeetingsBeta] = useState(false);
 
   useEffect(() => {
     if (user) {
       setPlan(user.plan);
       setRole(user.role);
       setIsActive(user.isActive);
+      setMeetingsBeta(!!user.meetingsBeta);
     }
   }, [user]);
 
   const mutation = useMutation({
     mutationFn: () =>
-      api.patch(`/admin/users/${user!.id}`, { plan, role, isActive }),
+      api.patch(`/admin/users/${user!.id}`, { plan, role, isActive, meetingsBeta }),
     onSuccess: () => {
       toast.success("Usuário atualizado.");
       onSaved();
@@ -109,6 +111,16 @@ export function EditUserDialog({
               checked={isActive}
               onCheckedChange={setIsActive}
             />
+          </div>
+
+          <div className="flex items-center justify-between rounded-md border p-3">
+            <div>
+              <Label htmlFor="meetings-beta-switch">Reuniões (beta)</Label>
+              <p className="text-muted-foreground text-xs">
+                Libera o assistente em reuniões reais. Precisa de Premium.
+              </p>
+            </div>
+            <Switch id="meetings-beta-switch" checked={meetingsBeta} onCheckedChange={setMeetingsBeta} />
           </div>
         </div>
 

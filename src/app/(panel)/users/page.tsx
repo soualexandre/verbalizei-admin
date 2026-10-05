@@ -28,6 +28,7 @@ import {
   PlanBadge,
   RoleBadge,
   ActiveBadge,
+  MeetingsBetaBadge,
 } from "@/components/entity-badges";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
@@ -248,6 +249,7 @@ export default function UsersPage() {
                                 mock
                               </span>
                             )}
+                            <MeetingsBetaBadge enabled={!!u.meetingsBeta} />
                           </div>
                           <p className="text-muted-foreground text-xs">
                             {u.email}

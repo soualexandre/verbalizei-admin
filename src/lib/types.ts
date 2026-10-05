@@ -156,6 +156,7 @@ export interface AdminUser {
     trainingSessions: number;
   };
   totalPoints: number;
+  meetingsBeta?: boolean;
 }
 
 export interface Paginated<T> {

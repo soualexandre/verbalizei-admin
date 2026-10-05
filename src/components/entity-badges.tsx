@@ -20,3 +20,7 @@ export function ActiveBadge({ active }: { active: boolean }) {
     </Badge>
   );
 }
+
+export function MeetingsBetaBadge({ enabled }: { enabled: boolean }) {
+  return enabled ? <Badge variant="outline">Beta reuniões</Badge> : null;
+}
