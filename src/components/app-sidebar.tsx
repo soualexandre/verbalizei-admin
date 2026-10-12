@@ -13,6 +13,7 @@ import {
   Fingerprint,
   WandSparkles,
   Gauge,
+  MessageSquareHeart,
 } from "lucide-react";
 import { cn, initials } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
@@ -22,6 +23,7 @@ import { Button } from "@/components/ui/button";
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/insights", label: "Insights IA", icon: Sparkles },
+  { href: "/feedback-evaluations", label: "Avaliações de feedback", icon: MessageSquareHeart },
   { href: "/users", label: "Usuários", icon: Users },
   { href: "/profiles", label: "Perfis", icon: Fingerprint },
   { href: "/enrichment", label: "Enriquecimento", icon: WandSparkles },
