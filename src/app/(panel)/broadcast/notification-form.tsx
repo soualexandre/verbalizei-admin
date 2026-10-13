@@ -43,9 +43,7 @@ export function BroadcastNotificationForm() {
       setResult(res);
       if (res.dryRun) toast.success(`Simulação: ${res.total} destinatários.`);
       else
-        toast.success(
-          `Envio concluído: ${res.sent} enviados, ${res.failed} falhas.`,
-        );
+        toast.success(`Envio iniciado para ${res.total} destinatários.`);
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
   });
@@ -129,11 +127,16 @@ export function BroadcastNotificationForm() {
           <Card>
             <CardContent className="space-y-1 py-4 text-sm">
               <p className="font-medium">
-                {result.dryRun ? "Simulação" : "Resultado do envio"}
+                {result.dryRun
+                  ? "Simulação"
+                  : result.queued
+                    ? "Envio iniciado"
+                    : "Resultado do envio"}
               </p>
               <p className="text-muted-foreground">
-                Total: {result.total} · Enviados: {result.sent} · Falhas:{" "}
-                {result.failed}
+                {result.queued
+                  ? `${result.total} destinatários. As notificações saem em segundo plano; acompanhe nos logs da API.`
+                  : `Total: ${result.total} · Enviados: ${result.sent} · Falhas: ${result.failed}`}
               </p>
             </CardContent>
           </Card>

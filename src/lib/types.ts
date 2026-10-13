@@ -200,6 +200,8 @@ export interface BroadcastResult {
   sent: number;
   failed: number;
   dryRun: boolean;
+  /** Envio real: a API manda em segundo plano, sent/failed não são finais. */
+  queued?: boolean;
 }
 
 // ─── Curriculum ──────────────────────────────────────────────────────────────
