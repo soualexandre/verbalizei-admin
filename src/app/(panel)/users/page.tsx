@@ -157,6 +157,7 @@ export default function UsersPage() {
               <SelectContent>
                 <SelectItem value={ALL}>Todos os planos</SelectItem>
                 <SelectItem value="FREE">FREE</SelectItem>
+                <SelectItem value="STARTER">STARTER</SelectItem>
                 <SelectItem value="PREMIUM">PREMIUM</SelectItem>
               </SelectContent>
             </Select>

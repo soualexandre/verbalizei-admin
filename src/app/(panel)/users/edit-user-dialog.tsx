@@ -78,11 +78,12 @@ export function EditUserDialog({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="FREE">FREE</SelectItem>
+                <SelectItem value="STARTER">STARTER (1 ano)</SelectItem>
                 <SelectItem value="PREMIUM">PREMIUM (1 ano)</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-muted-foreground text-xs">
-              Conceder PREMIUM define expiração de 1 ano automaticamente.
+              Conceder STARTER ou PREMIUM define expiração de 1 ano automaticamente.
             </p>
           </div>
 

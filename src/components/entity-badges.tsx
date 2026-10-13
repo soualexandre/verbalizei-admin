@@ -3,7 +3,7 @@ import type { UserPlan, UserRole } from "@/lib/types";
 
 export function PlanBadge({ plan }: { plan: UserPlan }) {
   return (
-    <Badge variant={plan === "PREMIUM" ? "default" : "secondary"}>{plan}</Badge>
+    <Badge variant={plan === "FREE" ? "secondary" : "default"}>{plan}</Badge>
   );
 }
 

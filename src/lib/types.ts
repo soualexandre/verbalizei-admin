@@ -1,7 +1,7 @@
 // Enums espelhando o schema Prisma da API (elovoz-api)
 
 export type UserRole = "ADMIN" | "USER";
-export type UserPlan = "FREE" | "PREMIUM";
+export type UserPlan = "FREE" | "STARTER" | "PREMIUM";
 export type UserSegment =
   | "VENDAS"
   | "PREGACAO"
