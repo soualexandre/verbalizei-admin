@@ -17,6 +17,7 @@ import type {
   AdminUser,
   Paginated,
   UserPlan,
+  UserInteractions,
   UserRole,
   UserSegment,
 } from "@/lib/types";
@@ -205,6 +206,9 @@ export default function UsersPage() {
                 <TableHead>Plano</TableHead>
                 <TableHead>Papel</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead title="Cenários + gravações (inclui o 1º reconhecimento) + micro-treinos + jogos">
+                  Interações
+                </TableHead>
                 <TableHead>XP</TableHead>
                 <TableHead>Streak</TableHead>
                 <TableHead>Criado</TableHead>
@@ -215,7 +219,7 @@ export default function UsersPage() {
               {isLoading ? (
                 Array.from({ length: 8 }).map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell colSpan={8}>
+                    <TableCell colSpan={9}>
                       <Skeleton className="h-8 w-full" />
                     </TableCell>
                   </TableRow>
@@ -223,7 +227,7 @@ export default function UsersPage() {
               ) : !data?.data.length ? (
                 <TableRow>
                   <TableCell
-                    colSpan={8}
+                    colSpan={9}
                     className="text-muted-foreground py-10 text-center"
                   >
                     Nenhum usuário encontrado.
@@ -266,6 +270,9 @@ export default function UsersPage() {
                     </TableCell>
                     <TableCell>
                       <ActiveBadge active={u.isActive} />
+                    </TableCell>
+                    <TableCell>
+                      <InteractionsCell value={u.interactions} />
                     </TableCell>
                     <TableCell>{u.totalPoints}</TableCell>
                     <TableCell>{u.progress?.streak ?? 0}</TableCell>
@@ -353,6 +360,31 @@ export default function UsersPage() {
         }}
       />
     </>
+  );
+}
+
+/** O total de interações e, embaixo, de onde ele vem (só o que não é zero). */
+function InteractionsCell({ value }: { value?: UserInteractions }) {
+  if (!value) return <span className="text-muted-foreground">—</span>;
+  const parts = [
+    [value.scenarios, "cenários", "cen."],
+    [value.recordings, "gravações (inclui o reconhecimento)", "grav."],
+    [value.micro, "micro-treinos", "micro"],
+    [value.games, "jogos", "jogos"],
+  ] as const;
+  const shown = parts.filter(([n]) => n > 0);
+  return (
+    <div
+      className="leading-tight"
+      title={parts.map(([n, long]) => `${n} ${long}`).join(" · ")}
+    >
+      <span className="font-medium tabular-nums">{value.total}</span>
+      {shown.length > 0 && (
+        <p className="text-muted-foreground text-[11px] tabular-nums whitespace-nowrap">
+          {shown.map(([n, , short]) => `${n} ${short}`).join(" · ")}
+        </p>
+      )}
+    </div>
   );
 }
 
