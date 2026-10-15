@@ -156,7 +156,25 @@ export interface AdminUser {
     trainingSessions: number;
   };
   totalPoints: number;
+  /**
+   * Interações: um contador só de tudo o que a pessoa fez (a métrica de
+   * engajamento). API antiga: ausente.
+   */
+  interactions?: UserInteractions;
   meetingsBeta?: boolean;
+}
+
+/** Cenários + gravações (inclui o 1º reconhecimento) + micro-treinos + jogos. */
+export interface UserInteractions {
+  total: number;
+  /** Sessões de cenário concluídas ou com alguma gravação. */
+  scenarios: number;
+  /** Análises avulsas: o 1º treino de reconhecimento e "Analisar um áudio". */
+  recordings: number;
+  /** Treinos curtos concluídos e desafios de voz das lições. */
+  micro: number;
+  /** Rodadas de jogos terminadas. */
+  games: number;
 }
 
 export interface Paginated<T> {
