@@ -21,7 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
 const NAV = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Visão geral", icon: LayoutDashboard },
   { href: "/insights", label: "Insights IA", icon: Sparkles },
   { href: "/feedback-evaluations", label: "Avaliações de feedback", icon: MessageSquareHeart },
   { href: "/users", label: "Usuários", icon: Users },
