@@ -79,7 +79,7 @@ export function BroadcastNotificationForm() {
           <div className="space-y-2">
             <Label>Tela (deep link opcional)</Label>
             <Input
-              placeholder="ex.: learn, training"
+              placeholder="ex.: voice (Cenários), profile (Perfil), leaderboard (Início)"
               value={screen}
               onChange={(e) => setScreen(e.target.value)}
             />

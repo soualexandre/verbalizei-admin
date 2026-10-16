@@ -10,7 +10,6 @@ import {
   Trash2,
   Pencil,
   Loader2,
-  GitBranch,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import type {
@@ -71,16 +70,13 @@ export default function UsersPage() {
   const [plan, setPlan] = useState<string>(ALL);
   const [role, setRole] = useState<string>(ALL);
   const [segment, setSegment] = useState<string>(ALL);
-  const [includeMocks, setIncludeMocks] = useState(false);
 
   const [editing, setEditing] = useState<AdminUser | null>(null);
   const [deleting, setDeleting] = useState<AdminUser | null>(null);
-  const [migrateOpen, setMigrateOpen] = useState(false);
 
   const params = new URLSearchParams({
     page: String(page),
     limit: "20",
-    includeMocks: includeMocks ? "true" : "false",
   });
   if (search) params.set("search", search);
   if (plan !== ALL) params.set("plan", plan);
@@ -101,20 +97,6 @@ export default function UsersPage() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
   });
 
-  const migrateMutation = useMutation({
-    mutationFn: () =>
-      api.post<{ stats: { total: number; updated: number; created: number } }>(
-        "/admin/users/migrate-segment-units",
-      ),
-    onSuccess: (res) => {
-      toast.success(
-        `Migração concluída: ${res.stats.updated} atualizados, ${res.stats.created} criados de ${res.stats.total}.`,
-      );
-      qc.invalidateQueries({ queryKey: ["users"] });
-    },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
-  });
-
   function applySearch(e: React.FormEvent) {
     e.preventDefault();
     setPage(1);
@@ -130,13 +112,8 @@ export default function UsersPage() {
     <>
       <PageHeader
         title="Usuários"
-        description="Gerencie planos, papéis, status e migração de trilhas."
-      >
-        <Button variant="outline" onClick={() => setMigrateOpen(true)}>
-          <GitBranch className="size-4" />
-          Migrar trilhas
-        </Button>
-      </PageHeader>
+        description="Gerencie planos, papéis e status. Usuários de teste não aparecem."
+      />
 
       <Card>
         <CardContent className="space-y-4">
@@ -190,13 +167,6 @@ export default function UsersPage() {
                 ))}
               </SelectContent>
             </Select>
-
-            <Button
-              variant={includeMocks ? "secondary" : "outline"}
-              onClick={() => resetPageAnd(() => setIncludeMocks((v) => !v))}
-            >
-              {includeMocks ? "Com mocks" : "Sem mocks"}
-            </Button>
           </div>
 
           <Table>
@@ -249,11 +219,6 @@ export default function UsersPage() {
                             <span className="font-medium">
                               {u.name || "—"}
                             </span>
-                            {u.isMock && (
-                              <span className="text-muted-foreground bg-muted rounded px-1 text-[10px]">
-                                mock
-                              </span>
-                            )}
                             <MeetingsBetaBadge enabled={!!u.meetingsBeta} />
                           </div>
                           <p className="text-muted-foreground text-xs">
@@ -349,16 +314,6 @@ export default function UsersPage() {
         }}
       />
 
-      <ConfirmDialog
-        open={migrateOpen}
-        onOpenChange={setMigrateOpen}
-        title="Migrar usuários para trilhas por segmento"
-        description="Atribui cada usuário (não-mock, com onboarding completo) à unidade do seu segmento. Esta ação altera o progresso dos usuários."
-        confirmLabel="Executar migração"
-        onConfirm={async () => {
-          await migrateMutation.mutateAsync();
-        }}
-      />
     </>
   );
 }

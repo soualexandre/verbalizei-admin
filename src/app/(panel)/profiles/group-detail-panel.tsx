@@ -36,7 +36,7 @@ export function GroupDetailPanel({
 }: {
   dimension: ProfileDimensionKey;
   groupKey: string;
-  /** days, includeMocks e includeInferred da página, para bater com o mapa. */
+  /** days e includeInferred da página, para bater com o mapa. */
   query: string;
   onClose: () => void;
 }) {

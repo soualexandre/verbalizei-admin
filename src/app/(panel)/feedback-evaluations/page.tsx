@@ -525,7 +525,7 @@ function EvaluationDialog({ id, onClose }: { id: string | null; onClose: () => v
 
             <section className="space-y-2">
               <h3 className="font-semibold">O que estava na tela</h3>
-              <JsonBlock value={ev.snapshot} />
+              <Fields value={ev.snapshot} />
             </section>
 
             <section className="space-y-2">
@@ -544,12 +544,8 @@ function EvaluationDialog({ id, onClose }: { id: string | null; onClose: () => v
                 </details>
               )}
               <details>
-                <summary className="cursor-pointer font-medium">Quem gerou (resultMeta)</summary>
-                <JsonBlock value={{ ...job.resultMeta, copyVersion: ev.copyVersion, phraseId: ev.phraseId }} />
-              </details>
-              <details>
-                <summary className="cursor-pointer font-medium">Resultado bruto</summary>
-                <JsonBlock value={{ result: job.result, analysisItems: job.analysisItems }} />
+                <summary className="cursor-pointer font-medium">Quem gerou</summary>
+                <Fields value={{ ...job.resultMeta, copyVersion: ev.copyVersion, phraseId: ev.phraseId }} />
               </details>
             </section>
 
@@ -580,11 +576,35 @@ function EvaluationDialog({ id, onClose }: { id: string | null; onClose: () => v
   );
 }
 
-function JsonBlock({ value }: { value: unknown }) {
+function fieldText(value: unknown): string {
+  if (value == null || value === "") return "—";
+  if (typeof value === "boolean") return value ? "Sim" : "Não";
+  if (typeof value === "number") return value.toLocaleString("pt-BR");
+  if (Array.isArray(value)) return value.map(fieldText).join(" · ");
+  if (typeof value === "object") {
+    return Object.entries(value as Record<string, unknown>)
+      .map(([k, v]) => `${k}: ${fieldText(v)}`)
+      .join(" · ");
+  }
+  return String(value);
+}
+
+/** Campos de um objeto em lista (chave e valor), no lugar do JSON cru. */
+function Fields({ value }: { value: unknown }) {
+  if (!value || typeof value !== "object") {
+    return <p className="text-muted-foreground">{fieldText(value)}</p>;
+  }
+  const entries = Object.entries(value as Record<string, unknown>).filter(([, v]) => v != null && v !== "");
+  if (!entries.length) return <p className="text-muted-foreground">Nada registrado.</p>;
   return (
-    <pre className="bg-muted max-h-72 overflow-auto rounded-md p-3 font-mono text-xs leading-relaxed">
-      {JSON.stringify(value, null, 2)}
-    </pre>
+    <dl className="divide-y rounded-md border">
+      {entries.map(([k, v]) => (
+        <div key={k} className="grid gap-1 px-3 py-2 sm:grid-cols-[10rem_1fr]">
+          <dt className="text-muted-foreground font-mono text-xs">{k}</dt>
+          <dd className="break-words">{fieldText(v)}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 

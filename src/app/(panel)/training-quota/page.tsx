@@ -145,10 +145,10 @@ function Overview({ data }: { data: AdminTrainingQuota }) {
         hint="No período corrente, por usuários sem Premium"
       />
       <StatCard
-        label="Usuários ativos"
+        label="Usaram a cota"
         icon={UserCheck}
         value={formatNumber(current.activeUsers)}
-        hint="Fizeram ao menos 1 treino no período"
+        hint="Pessoas com ao menos 1 treino descontado no período"
       />
       <StatCard
         label="Bateram o limite"
