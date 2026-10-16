@@ -78,31 +78,31 @@ export interface LoginResponse {
 
 // ─── Dashboard ───────────────────────────────────────────────────────────────
 
-export interface DashboardData {
-  users: {
-    total: number;
-    premium: number;
-    free: number;
-    admin: number;
-    activeMonth: number;
-    activeWeek: number;
-    newMonth: number;
-    conversionRate: number;
+/** GET /admin/overview (verbalizei-api src/admin/dashboard-overview.ts). */
+export type InteractionKind = "scenarios" | "recordings" | "micro" | "games";
+export type ByKind = Record<InteractionKind, number>;
+
+export interface Kpi {
+  value: number;
+  previous: number;
+}
+
+export interface DashboardOverview {
+  period: { days: number; from: string; to: string };
+  totals: { users: number; premium: number; admins: number };
+  kpis: {
+    activeUsers: Kpi;
+    /** `activated`: dos novos, quantos já fizeram a primeira interação. */
+    newUsers: Kpi & { activated: number };
+    interactions: Kpi & { byKind: ByKind };
+    /** % dos ativos no período anterior que voltaram neste (null sem base). */
+    retention: { value: number | null; previous: number | null; base: number };
   };
-  payments: {
-    total: number;
-    approved: number;
-    totalRevenue: number;
-  };
-  saas: {
-    mrr: number;
-    arr: number;
-    churnRateMonthly: number;
-    arpu: number;
-    ltv: number;
-    activeSubscribers: number;
-    churnedSubscribers30d: number;
-  };
+  daily: Array<{ day: string; activeUsers: number } & ByKind>;
+  /** Semana de cadastro (segunda-feira) e % ativo nas semanas 0–4 depois dela; null = ainda não chegou. */
+  cohorts: Array<{ week: string; size: number; retention: (number | null)[] }>;
+  topScenarios: Array<{ id: string; title: string; sessions: number; users: number }>;
+  scenarioCompletion: { started: number; completed: number };
 }
 
 export interface TodayInsight {

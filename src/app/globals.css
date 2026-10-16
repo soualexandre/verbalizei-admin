@@ -4,38 +4,48 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.141 0.005 285.823);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.141 0.005 285.823);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.21 0.006 285.885);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.21 0.006 285.885);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.705 0.015 286.067);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-primary: oklch(0.21 0.006 285.885);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.705 0.015 286.067);
+  /* Linguagem do web e do app (verbalizei_web/app/globals.css, DESIGN.md do
+     app): um azul só para marca e ação, neutros frios do Tailwind, superfície
+     levemente cinza com cartões brancos de borda fina, cantos de 16 px. */
+  --radius: 0.75rem;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #0c4cae;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #eef4ff;
+  --accent-foreground: #0a3d8f;
+  --destructive: #ef4444;
+  --border: #e5e7eb;
+  --input: #e2e8f0;
+  --ring: #2d6fbe;
+  /* Gráficos, cor por significado (lib/design/identity.ts do web):
+     azul = cenários, azul claro = gravações, verde = micro-treinos,
+     laranja = jogos (XP). */
+  --chart-1: #0c4cae;
+  --chart-2: #7fb0ee;
+  --chart-3: #22c55e;
+  --chart-4: #f97316;
+  --chart-5: #94a3b8;
+  --success: #15803d;
+  --success-soft: #dcfce7;
+  --warning: #c2410c;
+  --warning-soft: #ffedd5;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #0c4cae;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eef4ff;
+  --sidebar-accent-foreground: #0a3d8f;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: #2d6fbe;
   /* Mapa de calor divergente: abaixo da média ← cinza → acima da média */
   --heat-pos: #7fb0ee;
   --heat-neg: #f0a29b;
@@ -84,6 +94,10 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -125,4 +139,5 @@ body {
   background-color: var(--background);
   color: var(--foreground);
   font-feature-settings: "rlig" 1, "calt" 1;
+  letter-spacing: -0.005em;
 }
