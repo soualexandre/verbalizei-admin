@@ -1,26 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Plus,
-  Search,
-  Pencil,
-  Trash2,
+  AlertCircle,
+  ImageIcon,
   MoreHorizontal,
-  ChevronRight,
-  ListChecks,
+  Pencil,
+  RefreshCw,
+  Search,
+  Sparkles,
 } from "lucide-react";
 import { api } from "@/lib/api";
-import type { Paginated, Unit } from "@/lib/types";
+import type { Challenge, SkillGapRef } from "@/lib/types";
 import { PageHeader } from "@/components/page-header";
-import { PaginationBar } from "@/components/pagination-bar";
-import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -36,205 +33,240 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { UnitDialog } from "./unit-dialog";
-import { toast } from "sonner";
+import { ChallengeDialog, formatLabel } from "./challenge-dialog";
+import { VariantsDialog } from "./variants-dialog";
+import { ChallengeImageDialog } from "./challenge-image-dialog";
 
-export default function CurriculumPage() {
+interface DrillGroup {
+  key: string;
+  gap: SkillGapRef | null;
+  drills: Challenge[];
+}
+
+/**
+ * Micro-treinos: os drills de 30–60 s que a recomendação serve a partir do
+ * gap detectado na fala (Challenge com isDrill = true, semeados por
+ * seed-microlearning.ts). A trilha antiga Unit → Session → Lesson saiu do
+ * admin: nenhum app usa mais. A API já devolve na ordem do gap mais urgente
+ * para o menos, e dentro do gap na ordem do pacote; aqui só agrupamos.
+ */
+export default function MicroTrainingsPage() {
   const qc = useQueryClient();
-  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [searchInput, setSearchInput] = useState("");
-  const [dialogUnit, setDialogUnit] = useState<Unit | null | undefined>(
-    undefined,
-  );
-  const [deleting, setDeleting] = useState<Unit | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [variantsFor, setVariantsFor] = useState<Challenge | null>(null);
+  const [imageFor, setImageFor] = useState<Challenge | null>(null);
 
-  const params = new URLSearchParams({ page: String(page), limit: "20" });
-  if (search) params.set("search", search);
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["units", params.toString()],
-    queryFn: () => api.get<Paginated<Unit>>(`/admin/units?${params}`),
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["drills"],
+    queryFn: () => api.get<Challenge[]>("/admin/challenges/drills"),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/admin/units/${id}`),
-    onSuccess: () => {
-      toast.success("Unidade excluída.");
-      qc.invalidateQueries({ queryKey: ["units"] });
-    },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
-  });
+  const groups = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const map = new Map<string, DrillGroup>();
+    for (const d of data ?? []) {
+      if (q && !matches(d, q)) continue;
+      const key = d.gap?.id ?? "__sem_gap__";
+      const g = map.get(key) ?? { key, gap: d.gap ?? null, drills: [] };
+      g.drills.push(d);
+      map.set(key, g);
+    }
+    return [...map.values()];
+  }, [data, search]);
+
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["drills"] });
+    qc.invalidateQueries({ queryKey: ["challenge"] });
+  };
 
   return (
     <>
       <PageHeader
-        title="Currículo"
-        description="Unidades, módulos, lições e desafios da trilha de aprendizado."
+        title="Micro-treinos"
+        description={
+          data
+            ? `${data.length} drills ativos, agrupados pelo gap de fala que cada um treina.`
+            : "Drills ativos, agrupados pelo gap de fala que cada um treina."
+        }
       >
-        <Button variant="outline" asChild>
-          <Link href="/curriculum/challenges">
-            <ListChecks className="size-4" />
-            Banco de desafios
-          </Link>
-        </Button>
-        <Button onClick={() => setDialogUnit(null)}>
-          <Plus className="size-4" />
-          Nova unidade
-        </Button>
+        <div className="relative w-full sm:w-72">
+          <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+          <Input
+            placeholder="Buscar por enunciado ou tópico…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
       </PageHeader>
 
-      <Card>
-        <CardContent className="space-y-4">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              setPage(1);
-              setSearch(searchInput.trim());
-            }}
-            className="relative max-w-sm"
-          >
-            <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-            <Input
-              placeholder="Buscar unidade…"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="pl-9"
-            />
-          </form>
-
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">#</TableHead>
-                <TableHead>Título</TableHead>
-                <TableHead>Segmentos</TableHead>
-                <TableHead>Módulos</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-10" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 6 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell colSpan={6}>
-                      <Skeleton className="h-8 w-full" />
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : !data?.data.length ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="text-muted-foreground py-10 text-center"
-                  >
-                    Nenhuma unidade cadastrada.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                data.data.map((u) => (
-                  <TableRow key={u.id}>
-                    <TableCell className="text-muted-foreground">
-                      {u.order}
-                    </TableCell>
-                    <TableCell>
-                      <Link
-                        href={`/curriculum/units/${u.id}`}
-                        className="group flex items-center gap-2 font-medium hover:underline"
-                      >
-                        {u.color && (
-                          <span
-                            className="size-3 rounded-full"
-                            style={{ backgroundColor: u.color }}
-                          />
-                        )}
-                        {u.title}
-                        <ChevronRight className="text-muted-foreground size-3 opacity-0 transition-opacity group-hover:opacity-100" />
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {u.segments?.length ? (
-                          u.segments.map((s) => (
-                            <Badge key={s} variant="outline" className="text-[10px]">
-                              {s}
-                            </Badge>
-                          ))
-                        ) : (
-                          <span className="text-muted-foreground text-xs">—</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{u._count?.sessions ?? 0}</TableCell>
-                    <TableCell>
-                      <Badge variant={u.isActive ? "success" : "secondary"}>
-                        {u.isActive ? "Ativa" : "Inativa"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="size-8">
-                            <MoreHorizontal className="size-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link href={`/curriculum/units/${u.id}`}>
-                              <ChevronRight className="size-4" />
-                              Abrir módulos
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => setDialogUnit(u)}>
-                            <Pencil className="size-4" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            variant="destructive"
-                            onSelect={() => setDeleting(u)}
+      {isError && !data ? (
+        <Card className="shadow-none">
+          <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
+            <AlertCircle className="text-muted-foreground size-6" />
+            <p className="text-sm">Não foi possível carregar os micro-treinos.</p>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              <RefreshCw className="size-4" />
+              Tentar de novo
+            </Button>
+          </CardContent>
+        </Card>
+      ) : isLoading ? (
+        <div className="space-y-4" aria-busy="true" aria-label="Carregando micro-treinos">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-56 rounded-xl" />
+          ))}
+        </div>
+      ) : !groups.length ? (
+        <Card className="shadow-none">
+          <CardContent className="text-muted-foreground py-10 text-center text-sm">
+            {search.trim()
+              ? "Nenhum micro-treino encontrado para essa busca."
+              : "Nenhum micro-treino ativo. Rode o seed de micro-treinos na API."}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {groups.map((g) => (
+            <Card key={g.key} className="gap-3 shadow-none">
+              <CardHeader className="flex flex-row items-baseline justify-between gap-2">
+                <CardTitle className="text-base">
+                  {g.gap?.label ?? "Sem gap"}
+                  {g.gap?.slug && (
+                    <span className="text-muted-foreground ml-2 font-mono text-xs font-normal">
+                      {g.gap.slug}
+                    </span>
+                  )}
+                </CardTitle>
+                <span className="text-muted-foreground text-sm tabular-nums">
+                  {g.drills.length} {g.drills.length === 1 ? "drill" : "drills"}
+                </span>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10 text-right">#</TableHead>
+                      <TableHead>Enunciado</TableHead>
+                      <TableHead className="w-36">Formato</TableHead>
+                      <TableHead className="w-64">Alvo</TableHead>
+                      <TableHead className="w-10" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {g.drills.map((d) => (
+                      <TableRow key={d.id}>
+                        <TableCell className="text-muted-foreground text-right tabular-nums">
+                          {d.drillOrder ?? "—"}
+                        </TableCell>
+                        <TableCell className="max-w-md whitespace-normal">
+                          <button
+                            className="line-clamp-2 text-left font-medium hover:underline"
+                            onClick={() => setEditId(d.id)}
                           >
-                            <Trash2 className="size-4" />
-                            Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                            {d.question || d.topic || "(sem enunciado)"}
+                          </button>
+                          {d.question && d.topic && (
+                            <p className="text-muted-foreground mt-0.5 text-xs">
+                              {d.topic}
+                            </p>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {d.drillFormat ? (
+                            <Badge variant="secondary">
+                              {formatLabel(d.drillFormat)}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground max-w-64 text-sm whitespace-normal">
+                          <Target drill={d} />
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-8"
+                                aria-label="Ações"
+                              >
+                                <MoreHorizontal className="size-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onSelect={() => setEditId(d.id)}>
+                                <Pencil className="size-4" />
+                                Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => setImageFor(d)}>
+                                <ImageIcon className="size-4" />
+                                Imagem
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => setVariantsFor(d)}>
+                                <Sparkles className="size-4" />
+                                Gerar variantes (IA)
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
-          {data && (
-            <PaginationBar
-              page={data.meta.page}
-              totalPages={data.meta.totalPages}
-              total={data.meta.total}
-              onPageChange={setPage}
-            />
-          )}
-        </CardContent>
-      </Card>
-
-      <UnitDialog
-        unit={dialogUnit}
-        open={dialogUnit !== undefined}
-        onOpenChange={(o) => !o && setDialogUnit(undefined)}
-        onSaved={() => qc.invalidateQueries({ queryKey: ["units"] })}
+      <ChallengeDialog
+        challengeId={editId}
+        open={editId !== null}
+        onOpenChange={(o) => !o && setEditId(null)}
+        onSaved={invalidate}
       />
 
-      <ConfirmDialog
-        open={!!deleting}
-        onOpenChange={(o) => !o && setDeleting(null)}
-        title="Excluir unidade"
-        description={`Excluir "${deleting?.title}" e seus módulos/lições associados?`}
-        confirmLabel="Excluir"
-        variant="destructive"
-        onConfirm={async () => {
-          if (deleting) await deleteMutation.mutateAsync(deleting.id);
-        }}
+      <VariantsDialog
+        challenge={variantsFor}
+        open={!!variantsFor}
+        onOpenChange={(o) => !o && setVariantsFor(null)}
+      />
+
+      <ChallengeImageDialog
+        challenge={imageFor}
+        open={!!imageFor}
+        onOpenChange={(o) => !o && setImageFor(null)}
+        onChanged={invalidate}
       />
     </>
   );
+}
+
+/** O que o drill pede: texto a ler, regra do jogo e/ou a janela de duração. */
+function Target({ drill }: { drill: Challenge }) {
+  const duration = durationLabel(drill.minDuration, drill.maxDuration);
+  const text = drill.textoAlvo || drill.drillRule;
+  if (!text && !duration) return <span>—</span>;
+  return (
+    <div className="space-y-0.5">
+      {text && <p className="line-clamp-2">{text}</p>}
+      {duration && <p className="text-xs tabular-nums">{duration}</p>}
+    </div>
+  );
+}
+
+function durationLabel(min: number | null, max: number | null) {
+  if (min != null && max != null) return `${min}–${max} s`;
+  if (min != null) return `mín. ${min} s`;
+  if (max != null) return `até ${max} s`;
+  return null;
+}
+
+function matches(d: Challenge, q: string) {
+  return [d.question, d.topic, d.textoAlvo, d.drillRule, d.gap?.label]
+    .some((v) => v?.toLowerCase().includes(q));
 }

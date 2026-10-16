@@ -200,19 +200,10 @@ function SignalsList({ signals }: { signals: EnrichmentSignals }) {
       signals.scenariosUsed.map((s) => `${s.title} (${s.sessions}×)`).join(" · "),
     ]);
   }
-  if (signals.practice.length) {
+  if (signals.practicedGaps?.length) {
     lines.push([
-      "Práticas",
-      signals.practice
-        .map((p) => p.customScenario ?? p.preset ?? p.theme ?? p.customContext)
-        .filter(Boolean)
-        .join(" · "),
-    ]);
-  }
-  if (signals.studiedUnits.length) {
-    lines.push([
-      "Trilhas estudadas",
-      signals.studiedUnits.map((u) => `${u.title} (${u.lessons} lições)`).join(" · "),
+      "Habilidades nos micro-treinos",
+      signals.practicedGaps.map((g) => `${g.label} (${g.drills}×)`).join(" · "),
     ]);
   }
   if (signals.feedbackComment) lines.push(["Comentário de feedback", signals.feedbackComment]);

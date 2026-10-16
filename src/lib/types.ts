@@ -105,22 +105,6 @@ export interface DashboardOverview {
   scenarioCompletion: { started: number; completed: number };
 }
 
-export interface TodayInsight {
-  summary?: string;
-  riskSignals?: string[];
-  retentionStrategies?: string[];
-  metrics?: {
-    dailyActiveUsers?: number;
-    weeklyActiveUsers?: number;
-    newUsersLast7d?: number;
-    lessonsCompletedLast7d?: number;
-    challengeAccuracyLast7d?: number;
-    avgVoiceScoreLast7d?: number;
-  };
-  generatedAt?: string;
-  [key: string]: unknown;
-}
-
 // ─── Users ───────────────────────────────────────────────────────────────────
 
 export interface AdminUser {
@@ -146,15 +130,7 @@ export interface AdminUser {
     gems: number;
     seniorityLevel: SeniorityLevel;
   } | null;
-  _count: {
-    completions: number;
-    payments: number;
-    purchases: number;
-    recordings: number;
-    submissions: number;
-    practiceSessions: number;
-    trainingSessions: number;
-  };
+  /** XP de cenários, micro-treinos e jogos. */
   totalPoints: number;
   /**
    * Interações: um contador só de tudo o que a pessoa fez (a métrica de
@@ -192,16 +168,8 @@ export interface UserDetail {
     data: Record<string, unknown> | null;
     segment: UserSegment | null;
   };
-  recordings: Array<{
-    id: string;
-    createdAt: string;
-    averageScore: number | null;
-    clarity: number | null;
-    pace: number | null;
-    volume: number | null;
-    pronunciation: number | null;
-    suggestions: string[];
-  }>;
+  /** O que a pessoa fez no app, por tipo (a mesma conta da lista). */
+  interactions: UserInteractions;
   trainingAttempts: Array<{
     id: string;
     createdAt: string;
@@ -222,46 +190,14 @@ export interface BroadcastResult {
   queued?: boolean;
 }
 
-// ─── Curriculum ──────────────────────────────────────────────────────────────
+// ─── Micro-treinos ───────────────────────────────────────────────────────────
 
-export interface Unit {
+/** Gap de fala que um micro-treino ataca (SkillGap, só o que a lista usa). */
+export interface SkillGapRef {
   id: string;
-  title: string;
-  description: string | null;
-  color: string | null;
-  order: number;
-  isActive: boolean;
-  segments?: UserSegment[];
-  createdAt?: string;
-  updatedAt?: string;
-  _count?: { sessions?: number; challenges?: number };
-  sessions?: Session[];
-}
-
-export interface Session {
-  id: string;
-  unitId: string;
-  title: string;
-  description: string | null;
-  guideCovered: string | null;
-  guideHowToPass: string | null;
-  order: number;
-  isFree: boolean;
-  unit?: Unit;
-  _count?: { lessons?: number };
-  lessons?: Lesson[];
-}
-
-export interface Lesson {
-  id: string;
-  sessionId: string;
-  type: string;
-  position: number;
-  isActive: boolean;
-  isPromotionLesson: boolean;
-  seniorityLevel: SeniorityLevel | null;
-  session?: Session;
-  _count?: { challenges?: number };
+  slug: string;
+  label: string;
+  priority: number;
 }
 
 export interface ChallengeOption {
@@ -292,18 +228,18 @@ export interface Challenge {
   textoAlvo: string | null;
   objetivoEsperado: string | null;
   imageUrl: string | null;
+  /** Micro-treino: fora da trilha, servido pela recomendação de gaps. */
+  isDrill?: boolean;
+  gapId?: string | null;
+  drillOrder?: number;
+  /** CENARIO | LEITURA | JOGO | RECONHECIMENTO */
+  drillFormat?: string | null;
+  drillContexts?: string[];
+  drillRule?: string | null;
+  gap?: SkillGapRef | null;
   options?: ChallengeOption[];
-  unit?: Unit;
   createdAt?: string;
   updatedAt?: string;
-}
-
-export interface LessonChallengeLink {
-  id: string;
-  lessonId: string;
-  challengeId: string;
-  order: number;
-  challenge?: Challenge;
 }
 
 // ─── Perfis ──────────────────────────────────────────────────────────────────
@@ -404,7 +340,6 @@ export interface ProfilesAnalysis {
     /** null em todo o período: recorrente = 1 dia ativo por semana desde o cadastro. */
     recurringThreshold: number | null;
   };
-  includeMocks: boolean;
   includeInferred: boolean;
   inferredUsers: number;
   base: ProfileGroupStats;
@@ -501,13 +436,8 @@ export interface EnrichmentSignals {
   } | null;
   customScenarios: Array<{ title: string; description: string | null }>;
   scenariosUsed: Array<{ title: string; sessions: number }>;
-  practice: Array<{
-    theme: string | null;
-    preset: string | null;
-    customContext: string | null;
-    customScenario: string | null;
-  }>;
-  studiedUnits: Array<{ title: string; segments: string[]; lessons: number }>;
+  /** Habilidades treinadas nos micro-treinos. Perfis gerados antes de 16/10/2026: ausente. */
+  practicedGaps?: Array<{ label: string; drills: number }>;
   transcriptExcerpts: string[];
   feedbackComment: string | null;
 }

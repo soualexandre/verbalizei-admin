@@ -5,9 +5,8 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
-  GraduationCap,
+  Dumbbell,
   Megaphone,
-  Sparkles,
   LogOut,
   Mic,
   Fingerprint,
@@ -22,13 +21,12 @@ import { Button } from "@/components/ui/button";
 
 const NAV = [
   { href: "/dashboard", label: "Visão geral", icon: LayoutDashboard },
-  { href: "/insights", label: "Insights IA", icon: Sparkles },
   { href: "/feedback-evaluations", label: "Avaliações de feedback", icon: MessageSquareHeart },
   { href: "/users", label: "Usuários", icon: Users },
   { href: "/profiles", label: "Perfis", icon: Fingerprint },
   { href: "/enrichment", label: "Enriquecimento", icon: WandSparkles },
   { href: "/training-quota", label: "Cota de treinos", icon: Gauge },
-  { href: "/curriculum", label: "Currículo", icon: GraduationCap },
+  { href: "/curriculum", label: "Micro-treinos", icon: Dumbbell },
   { href: "/broadcast", label: "Broadcast", icon: Megaphone },
 ];
 

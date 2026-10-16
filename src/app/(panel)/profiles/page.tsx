@@ -40,16 +40,15 @@ const PERIODS = [
 
 export default function ProfilesPage() {
   const [days, setDays] = useState<string>("30");
-  const [includeMocks, setIncludeMocks] = useState(false);
   const [includeInferred, setIncludeInferred] = useState(true);
   const [dimensionKey, setDimensionKey] = useState<ProfileDimensionKey>("persona");
   const [selected, setSelected] = useState<string[]>([]);
   const [highlighted, setHighlighted] = useState<string | null>(null);
   const [openGroup, setOpenGroup] = useState<string | null>(null);
-  const analysisQuery = `days=${days}&includeMocks=${includeMocks}&includeInferred=${includeInferred}`;
+  const analysisQuery = `days=${days}&includeInferred=${includeInferred}`;
 
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
-    queryKey: ["profiles", days, includeMocks, includeInferred],
+    queryKey: ["profiles", days, includeInferred],
     queryFn: () =>
       api.get<ProfilesAnalysis>(
         `/admin/profiles?${analysisQuery}`,
@@ -106,16 +105,6 @@ export default function ProfilesPage() {
             />
             <Label htmlFor="profiles-inferred" className="text-muted-foreground">
               Incluir perfis inferidos
-            </Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <Switch
-              id="profiles-mocks"
-              checked={includeMocks}
-              onCheckedChange={setIncludeMocks}
-            />
-            <Label htmlFor="profiles-mocks" className="text-muted-foreground">
-              Incluir mocks
             </Label>
           </div>
         </div>
@@ -287,8 +276,9 @@ export default function ProfilesPage() {
                         <dt className="font-medium">Base → acessos</dt>
                         <dd className="text-muted-foreground">
                           Fatia da base de usuários contra a fatia de todos os dias ativos do
-                          período. Um dia ativo é um dia com lição, desafio, gravação, treino,
-                          prática ou jogo.
+                          período. Um dia ativo é um dia com alguma interação: cenário concluído ou
+                          com gravação, gravação avulsa (inclui o 1º reconhecimento), micro-treino
+                          ou jogo — a mesma régua da Visão geral.
                         </dd>
                       </div>
                       {METRICS.map((m) => (
@@ -302,9 +292,8 @@ export default function ProfilesPage() {
                       <div>
                         <dt className="font-medium">Quem entra na análise</dt>
                         <dd className="text-muted-foreground">
-                          Todos os usuários não administradores
-                          {data.includeMocks ? ", incluindo mocks" : ", sem mocks"}. Datas no
-                          fuso de Brasília.
+                          Todos os usuários, menos administradores e usuários de teste. Datas
+                          no fuso de Brasília.
                           {data.includeInferred
                             ? " Quem não respondeu o onboarding, respondeu “Outro” ou está sem segmento entra pelo perfil inferido (confiança de 50% ou mais); o que o usuário declarou sempre vence. O momento de carreira não é inferido."
                             : " Só respostas declaradas pelo usuário."}

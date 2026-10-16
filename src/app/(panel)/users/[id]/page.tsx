@@ -3,9 +3,9 @@
 import { use } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Mic, Dumbbell, WandSparkles } from "lucide-react";
+import { ArrowLeft, Dumbbell, WandSparkles } from "lucide-react";
 import { api } from "@/lib/api";
-import type { UserDetail, UserEnrichmentDetail } from "@/lib/types";
+import type { UserDetail, UserEnrichmentDetail, UserInteractions } from "@/lib/types";
 import { formatDateTime } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { EnrichmentActions } from "@/components/enrichment-actions";
@@ -72,9 +72,7 @@ export default function UserDetailPage({
             </CardHeader>
             <CardContent>
               {data.onboarding.data ? (
-                <pre className="bg-muted max-h-80 overflow-auto rounded-md p-4 text-xs">
-                  {JSON.stringify(data.onboarding.data, null, 2)}
-                </pre>
+                <OnboardingAnswers data={data.onboarding.data} />
               ) : (
                 <p className="text-muted-foreground text-sm">
                   Sem dados de onboarding.
@@ -83,6 +81,8 @@ export default function UserDetailPage({
             </CardContent>
           </Card>
 
+          <InteractionsCard value={data.interactions} />
+
           <TrainingQuotaCard userId={id} />
 
           <InferredProfileCard userId={id} />
@@ -90,53 +90,8 @@ export default function UserDetailPage({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Mic className="size-4" />
-                Gravações recentes
-              </CardTitle>
-              <CardDescription>
-                Últimas {data.recordings.length} gravações de voz.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {!data.recordings.length ? (
-                <p className="text-muted-foreground text-sm">
-                  Nenhuma gravação.
-                </p>
-              ) : (
-                data.recordings.map((r) => (
-                  <div key={r.id} className="rounded-md border p-3">
-                    <div className="mb-2 flex items-center justify-between">
-                      <span className="text-muted-foreground text-xs">
-                        {formatDateTime(r.createdAt)}
-                      </span>
-                      {r.averageScore != null && (
-                        <Badge>{r.averageScore.toFixed(1)}</Badge>
-                      )}
-                    </div>
-                    <div className="text-muted-foreground flex flex-wrap gap-3 text-xs">
-                      <Metric label="Clareza" value={r.clarity} />
-                      <Metric label="Ritmo" value={r.pace} />
-                      <Metric label="Volume" value={r.volume} />
-                      <Metric label="Pronúncia" value={r.pronunciation} />
-                    </div>
-                    {r.suggestions.length > 0 && (
-                      <ul className="mt-2 space-y-1 text-xs">
-                        {r.suggestions.map((s, i) => (
-                          <li key={i}>• {s}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
                 <Dumbbell className="size-4" />
-                Treinos de oratória
+                Cenários analisados
               </CardTitle>
               <CardDescription>
                 Últimas {data.trainingAttempts.length} tentativas analisadas.
@@ -189,11 +144,74 @@ export default function UserDetailPage({
   );
 }
 
-function Metric({ label, value }: { label: string; value: number | null }) {
+/** O que a pessoa fez no app, por tipo (a mesma conta da coluna Interações). */
+function InteractionsCard({ value }: { value: UserInteractions }) {
+  const items = [
+    { label: "Cenários", value: value.scenarios },
+    { label: "Gravações", hint: "inclui o 1º reconhecimento", value: value.recordings },
+    { label: "Micro-treinos", value: value.micro },
+    { label: "Jogos", value: value.games },
+  ];
   return (
-    <span>
-      {label}: <strong>{value != null ? value.toFixed(1) : "—"}</strong>
-    </span>
+    <Card className="shadow-none">
+      <CardHeader>
+        <CardTitle>Interações</CardTitle>
+        <CardDescription className="tabular-nums">
+          {value.total} no total, desde o cadastro.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {items.map((i) => (
+            <div key={i.label} className="bg-muted/60 rounded-lg px-4 py-3">
+              <dt className="text-muted-foreground text-xs" title={i.hint}>
+                {i.label}
+              </dt>
+              <dd className="text-xl font-semibold tabular-nums">{i.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Nomes das respostas do onboarding (o resto aparece com a chave crua). */
+const ONBOARDING_LABEL: Record<string, string> = {
+  objective: "Objetivo",
+  audience: "Público",
+  obstacle: "Dificuldade",
+  careerStage: "Momento de carreira",
+  firstRoom: "Primeira sala",
+  persona: "Persona",
+  occupation: "Ocupação",
+  sector: "Setor",
+  skipped: "Pulou o onboarding",
+};
+
+function answerText(value: unknown): string {
+  if (value == null || value === "") return "—";
+  if (typeof value === "boolean") return value ? "Sim" : "Não";
+  if (Array.isArray(value)) return value.map(answerText).join(", ");
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+/** As respostas do onboarding em lista, no lugar do JSON cru. */
+function OnboardingAnswers({ data }: { data: Record<string, unknown> }) {
+  const entries = Object.entries(data).filter(([, v]) => v != null && v !== "");
+  if (!entries.length) {
+    return <p className="text-muted-foreground text-sm">Sem respostas.</p>;
+  }
+  return (
+    <dl className="divide-y text-sm">
+      {entries.map(([key, value]) => (
+        <div key={key} className="grid gap-1 py-2 sm:grid-cols-[12rem_1fr]">
+          <dt className="text-muted-foreground">{ONBOARDING_LABEL[key] ?? key}</dt>
+          <dd className="break-words">{answerText(value)}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
