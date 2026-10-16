@@ -1,4 +1,4 @@
-import type { DashboardOverview } from "@/lib/types";
+import type { DashboardOverview, ReturnRate } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActiveUsersChart, InteractionsChart, KindLegend } from "./charts";
 import { CohortTable } from "./cohort-table";
@@ -71,6 +71,22 @@ export function Overview({ data }: { data: DashboardOverview }) {
 
       <section className="space-y-4">
         <SectionTitle title="Retenção" description="Quem usa e quem volta." />
+        {data.microReturn && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <ReturnCard
+              label="Voltou no dia seguinte"
+              help="Dos dias em que alguém fez micro-treino, a % em que fez outro no dia seguinte."
+              rate={data.microReturn.nextDay}
+              before={before}
+            />
+            <ReturnCard
+              label="Voltou na mesma semana"
+              help="Dos dias em que alguém fez micro-treino, a % em que fez outro entre o 2º e o 7º dia depois."
+              rate={data.microReturn.nextWeek}
+              before={before}
+            />
+          </div>
+        )}
         <div className="grid gap-4 lg:grid-cols-2">
           <Card className="gap-4 shadow-none">
             <CardHeader>
@@ -140,6 +156,20 @@ export function Overview({ data }: { data: DashboardOverview }) {
         </div>
       </section>
     </div>
+  );
+}
+
+/** A volta depois do micro-treino, com a variação em pontos percentuais. */
+function ReturnCard({ label, help, rate, before }: { label: string; help: string; rate: ReturnRate; before: string }) {
+  return (
+    <KpiCard
+      label={label}
+      help={help}
+      value={rate.value == null ? "—" : fmtPct(rate.value)}
+      trend={pointsTrend(rate.value, rate.previous)}
+      previousLabel={rate.previous == null ? `${before}: sem base` : `${before}: ${fmtPct(rate.previous)}`}
+      detail={rate.base ? `de ${fmt(rate.base)} dias com micro-treino` : "Ninguém fez micro-treino na base"}
+    />
   );
 }
 

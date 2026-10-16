@@ -103,6 +103,18 @@ export interface DashboardOverview {
   cohorts: Array<{ week: string; size: number; retention: (number | null)[] }>;
   topScenarios: Array<{ id: string; title: string; sessions: number; users: number }>;
   scenarioCompletion: { started: number; completed: number };
+  /** Volta depois do micro-treino: dia seguinte (D1) e do 2º ao 7º dia. API antiga: ausente. */
+  microReturn?: {
+    nextDay: ReturnRate;
+    nextWeek: ReturnRate;
+  };
+}
+
+export interface ReturnRate {
+  value: number | null;
+  previous: number | null;
+  /** Dias-pessoa com micro-treino que entraram na conta. */
+  base: number;
 }
 
 // ─── Users ───────────────────────────────────────────────────────────────────
