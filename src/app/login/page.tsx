@@ -13,7 +13,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Loader2, Mic } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { BrandLogo } from "@/components/brand-logo";
 import { toast } from "sonner";
 
 export default function LoginPage() {
@@ -41,13 +42,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="bg-muted/40 flex min-h-screen items-center justify-center p-4">
+    <div className="bg-background flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="items-center text-center">
-          <div className="bg-primary text-primary-foreground mx-auto flex size-11 items-center justify-center rounded-xl">
-            <Mic className="size-5" />
-          </div>
-          <CardTitle className="mt-2 text-xl">Verbalizei Admin</CardTitle>
+          <BrandLogo priority className="mx-auto" />
+          <CardTitle className="mt-4 text-xl font-extrabold tracking-tight">Entrar no admin</CardTitle>
           <CardDescription>
             Entre com sua conta de administrador
           </CardDescription>

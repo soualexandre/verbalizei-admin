@@ -115,7 +115,7 @@ export default function MicroTrainingsPage() {
       ) : isLoading ? (
         <div className="space-y-4" aria-busy="true" aria-label="Carregando micro-treinos">
           {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-56 rounded-xl" />
+            <Skeleton key={i} className="h-56 rounded-card" />
           ))}
         </div>
       ) : !groups.length ? (
