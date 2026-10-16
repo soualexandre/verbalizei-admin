@@ -75,16 +75,16 @@ function Loading() {
     <div className="space-y-10" aria-busy="true" aria-label="Carregando visão geral">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-36 rounded-xl" />
+          <Skeleton key={i} className="h-36 rounded-card" />
         ))}
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
-        <Skeleton className="h-80 rounded-xl" />
-        <Skeleton className="h-80 rounded-xl" />
+        <Skeleton className="h-80 rounded-card" />
+        <Skeleton className="h-80 rounded-card" />
       </div>
       <div className="grid gap-4 lg:grid-cols-3">
-        <Skeleton className="h-80 rounded-xl lg:col-span-2" />
-        <Skeleton className="h-80 rounded-xl" />
+        <Skeleton className="h-80 rounded-card lg:col-span-2" />
+        <Skeleton className="h-80 rounded-card" />
       </div>
     </div>
   );

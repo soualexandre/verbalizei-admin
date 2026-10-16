@@ -12,6 +12,7 @@ const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
 export const metadata: Metadata = {
   title: "Verbalizei • Admin",
   description: "Painel administrativo do Verbalizei",
+  icons: { icon: "/icone_verbalizei.png", apple: "/icone_verbalizei.png" },
 };
 
 export default function RootLayout({
