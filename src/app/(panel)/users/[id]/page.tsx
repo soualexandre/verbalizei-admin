@@ -3,7 +3,7 @@
 import { use } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Dumbbell, WandSparkles } from "lucide-react";
+import { ArrowLeft, Dumbbell, FileBarChart, WandSparkles } from "lucide-react";
 import { api } from "@/lib/api";
 import type { UserDetail, UserEnrichmentDetail, UserInteractions } from "@/lib/types";
 import { formatDateTime } from "@/lib/utils";
@@ -41,6 +41,12 @@ export default function UserDetailPage({
   return (
     <>
       <PageHeader title="Detalhes do usuário" description={`ID: ${id}`}>
+        <Button variant="outline" asChild>
+          <Link href={`/feedback-evaluations?tab=relatorio&userId=${id}`}>
+            <FileBarChart className="size-4" />
+            Relatório de avaliações
+          </Link>
+        </Button>
         <Button variant="outline" asChild>
           <Link href="/users">
             <ArrowLeft className="size-4" />
