@@ -57,6 +57,8 @@ export interface QuotedComment {
 }
 
 export interface ReportCase {
+  /** A resposta global do caso (abre o detalhe). */
+  evaluationId: string;
   jobId: string;
   kind: string;
   title: string | null;

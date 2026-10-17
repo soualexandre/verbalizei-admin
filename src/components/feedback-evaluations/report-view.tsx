@@ -59,7 +59,7 @@ export function ReportView({ data, onOpenEvaluation }: { data: ReportResponse; o
       <AspectsSection aspects={r.aspects} />
       <PhrasesAndTexts report={r} onOpenEvaluation={onOpenEvaluation} />
       <ReasonsSection report={r} onOpenEvaluation={onOpenEvaluation} />
-      <CasesSection cases={r.cases} />
+      <CasesSection cases={r.cases} onOpenEvaluation={onOpenEvaluation} />
     </div>
   );
 }
@@ -763,7 +763,7 @@ function ReasonsSection({ report: r, onOpenEvaluation }: { report: EvaluationRep
 
 // ─── Casos ────────────────────────────────────────────────────────────────────
 
-function CasesSection({ cases }: { cases: ReportCase[] }) {
+function CasesSection({ cases, onOpenEvaluation }: { cases: ReportCase[]; onOpenEvaluation: OpenEvaluation }) {
   return (
     <Section
       title="Casos para estudar"
@@ -774,7 +774,7 @@ function CasesSection({ cases }: { cases: ReportCase[] }) {
       ) : (
         <div className="space-y-3">
           {cases.map((c) => (
-            <CaseBlock key={c.jobId} c={c} />
+            <CaseBlock key={c.evaluationId} c={c} onOpen={onOpenEvaluation} />
           ))}
         </div>
       )}
@@ -782,7 +782,7 @@ function CasesSection({ cases }: { cases: ReportCase[] }) {
   );
 }
 
-function CaseBlock({ c }: { c: ReportCase }) {
+function CaseBlock({ c, onOpen }: { c: ReportCase; onOpen: OpenEvaluation }) {
   const metrics = Object.entries(c.metrics);
   return (
     <details className="rounded-md border">
@@ -801,6 +801,9 @@ function CaseBlock({ c }: { c: ReportCase }) {
           <span>Prompt {c.promptVersion ?? "—"}</span>
           <span>Fonte {c.source ?? "—"}</span>
           <span className="font-mono">job {c.jobId}</span>
+          <Button variant="ghost" size="sm" className="ml-auto h-7" onClick={() => onOpen(c.evaluationId)}>
+            Abrir avaliação
+          </Button>
         </div>
         <Reasons reasons={c.reasons} />
         {c.comment && <blockquote className="border-l-2 pl-3 italic">“{c.comment}”</blockquote>}
