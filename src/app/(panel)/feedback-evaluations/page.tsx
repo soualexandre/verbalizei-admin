@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
+import { Suspense, useCallback, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Download, Loader2, MessageSquareText, RefreshCw, Save } from "lucide-react";
 import { toast } from "sonner";
@@ -9,7 +9,6 @@ import { api } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
 import {
   ASPECT_LABEL,
-  FELT_LABEL,
   RULE_LABEL,
   STATUS_LABEL,
   TARGET_LABEL,
@@ -20,16 +19,19 @@ import {
   pct,
   reasonLabel,
   type AgreementCell,
-  type EvalTarget,
-  type EvalVerdict,
-  type EvaluationDetail,
   type EvaluationPage,
-  type EvaluationRow,
   type EvaluationSettings,
   type EvaluationSummary,
 } from "@/lib/feedback-evaluations";
 import { PageHeader } from "@/components/page-header";
 import { PaginationBar } from "@/components/pagination-bar";
+import {
+  AnswerBadge,
+  EvaluationDialog,
+  targetText,
+  type ReportPerson,
+} from "@/components/feedback-evaluations/evaluation-dialog";
+import { EvaluationReportTab } from "@/components/feedback-evaluations/evaluation-report-tab";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -37,45 +39,97 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const PAGE_SIZE = 30;
 const ALL = "all";
+const TABS = ["overview", "list", "relatorio", "settings"] as const;
+type Tab = (typeof TABS)[number];
 
 export default function FeedbackEvaluationsPage() {
+  return (
+    <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+      <FeedbackEvaluations />
+    </Suspense>
+  );
+}
+
+function FeedbackEvaluations() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [days, setDays] = useState(28);
+
+  const tabParam = searchParams.get("tab");
+  const tab: Tab = (TABS as readonly string[]).includes(tabParam ?? "") ? (tabParam as Tab) : "overview";
+  const urlUserId = searchParams.get("userId");
+  // Nome e e-mail de quem veio do detalhe; pela URL só chega o id.
+  const [person, setPerson] = useState<ReportPerson | null>(null);
+  const reportPerson: ReportPerson | null = urlUserId
+    ? person?.id === urlUserId
+      ? person
+      : { id: urlUserId, name: null, email: null }
+    : null;
+
+  const navigate = useCallback(
+    (next: Tab, userId: string | null) => {
+      const q = new URLSearchParams();
+      if (next !== "overview") q.set("tab", next);
+      // A pessoa do relatório fica na URL ao trocar de aba, para não se perder.
+      if (userId) q.set("userId", userId);
+      const qs = q.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [pathname, router],
+  );
+
+  const openReport = useCallback(
+    (p: ReportPerson | null) => {
+      setPerson(p);
+      navigate("relatorio", p?.id ?? null);
+    },
+    [navigate],
+  );
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Avaliações de feedback"
         description="O que as pessoas dizem sobre o retorno das análises, amarrado ao resultado e à versão que o gerou."
       >
-        <Select value={String(days)} onValueChange={(v) => setDays(Number(v))}>
-          <SelectTrigger className="w-40" aria-label="Período">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="7">Últimos 7 dias</SelectItem>
-            <SelectItem value="28">Últimos 28 dias</SelectItem>
-            <SelectItem value="90">Últimos 90 dias</SelectItem>
-          </SelectContent>
-        </Select>
-        <ExportButton days={days} />
+        {tab !== "relatorio" && (
+          <>
+            <Select value={String(days)} onValueChange={(v) => setDays(Number(v))}>
+              <SelectTrigger className="w-40" aria-label="Período">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">Últimos 7 dias</SelectItem>
+                <SelectItem value="28">Últimos 28 dias</SelectItem>
+                <SelectItem value="90">Últimos 90 dias</SelectItem>
+              </SelectContent>
+            </Select>
+            <ExportButton days={days} />
+          </>
+        )}
       </PageHeader>
 
-      <Tabs defaultValue="overview">
+      <Tabs value={tab} onValueChange={(v) => navigate(v as Tab, reportPerson?.id ?? null)}>
         <TabsList>
           <TabsTrigger value="overview">Visão geral</TabsTrigger>
           <TabsTrigger value="list">Avaliações</TabsTrigger>
+          <TabsTrigger value="relatorio">Relatório</TabsTrigger>
           <TabsTrigger value="settings">Configuração</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="mt-6">
           <Overview days={days} />
         </TabsContent>
         <TabsContent value="list" className="mt-6">
-          <EvaluationList />
+          <EvaluationList onReport={openReport} />
+        </TabsContent>
+        <TabsContent value="relatorio" className="mt-6">
+          <EvaluationReportTab person={reportPerson} onPersonChange={openReport} />
         </TabsContent>
         <TabsContent value="settings" className="mt-6">
           <SettingsForm />
@@ -288,7 +342,7 @@ interface Filters {
 
 const EMPTY_FILTERS: Filters = { targetType: ALL, verdict: ALL, status: "ANSWERED", hasComment: ALL, promptVersion: "" };
 
-function EvaluationList() {
+function EvaluationList({ onReport }: { onReport: (person: ReportPerson) => void }) {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -410,7 +464,14 @@ function EvaluationList() {
         <PaginationBar page={page} totalPages={Math.ceil(data.total / PAGE_SIZE)} total={data.total} onPageChange={setPage} />
       )}
 
-      <EvaluationDialog id={openId} onClose={() => setOpenId(null)} />
+      <EvaluationDialog
+        id={openId}
+        onClose={() => setOpenId(null)}
+        onReport={(p) => {
+          setOpenId(null);
+          onReport(p);
+        }}
+      />
     </div>
   );
 }
@@ -443,168 +504,6 @@ function FilterSelect({
         </SelectContent>
       </Select>
     </div>
-  );
-}
-
-function targetText(row: EvaluationRow): string {
-  const type = TARGET_LABEL[row.targetType as EvalTarget] ?? row.targetType;
-  if (row.targetType === "ASPECT" || row.targetType === "LLM_TEXT") {
-    return `${type}: ${ASPECT_LABEL[row.targetKey] ?? row.targetKey}`;
-  }
-  return type;
-}
-
-function AnswerBadge({ row }: { row: EvaluationRow }) {
-  if (row.targetType === "SELF_ASSESSMENT" && row.status === "ANSWERED") {
-    const felt = String(row.value?.felt ?? "");
-    return <Badge variant="outline">{FELT_LABEL[felt] ?? felt}</Badge>;
-  }
-  if (row.status !== "ANSWERED" || !row.verdict) {
-    return <Badge variant="outline">{STATUS_LABEL[row.status]}</Badge>;
-  }
-  const variant: Record<EvalVerdict, "success" | "warning" | "destructive"> = {
-    AGREE: "success",
-    PARTIAL: "warning",
-    DISAGREE: "destructive",
-  };
-  return <Badge variant={variant[row.verdict]}>{VERDICT_LABEL[row.verdict]}</Badge>;
-}
-
-// ─── Detalhe ──────────────────────────────────────────────────────────────────
-
-function EvaluationDialog({ id, onClose }: { id: string | null; onClose: () => void }) {
-  const { data, isLoading } = useQuery({
-    queryKey: evalKeys.detail(id ?? ""),
-    queryFn: () => api.get<EvaluationDetail>(`/admin/feedback-evaluations/${id}`),
-    enabled: !!id,
-  });
-  const ev = data?.evaluation;
-  const job = data?.job;
-
-  return (
-    <Dialog open={!!id} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>{ev ? targetText(ev) : "Avaliação"}</DialogTitle>
-          <DialogDescription>
-            {ev ? `${ev.user?.name ?? ev.user?.email ?? "Pessoa"} · ${formatDateTime(ev.createdAt)} · ${ev.source}` : " "}
-          </DialogDescription>
-        </DialogHeader>
-
-        {isLoading || !ev || !job ? (
-          <div className="space-y-3">
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-40 w-full" />
-          </div>
-        ) : (
-          <div className="space-y-6 text-sm">
-            {job.stale && (
-              <p className="rounded-md bg-amber-50 p-3 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
-                Esta análise foi reprocessada depois da avaliação: o resultado abaixo não é o que a pessoa viu. Use o
-                “O que estava na tela”.
-              </p>
-            )}
-
-            <section className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <AnswerBadge row={ev} />
-                {ev.askRule && <Badge variant="outline">{RULE_LABEL[ev.askRule] ?? ev.askRule}</Badge>}
-                {ev.reasons.map((r) => (
-                  <Badge key={r} variant={r.startsWith("ai:") ? "outline" : "secondary"}>
-                    {reasonLabel(r)}
-                  </Badge>
-                ))}
-              </div>
-              {ev.comment && <blockquote className="border-l-2 pl-3 italic">“{ev.comment}”</blockquote>}
-              {ev.aiCriteria && (
-                <p className="text-muted-foreground">
-                  <strong className="text-foreground">Como a pessoa avalia (IA):</strong> {ev.aiCriteria}
-                </p>
-              )}
-            </section>
-
-            <section className="space-y-2">
-              <h3 className="font-semibold">O que estava na tela</h3>
-              <Fields value={ev.snapshot} />
-            </section>
-
-            <section className="space-y-2">
-              <h3 className="font-semibold">A análise</h3>
-              <p className="text-muted-foreground">
-                {job.title ?? job.kind} · nota {job.overallScore != null ? Math.round(job.overallScore) : "—"} ·{" "}
-                <Link className="underline" href={`/users/${ev.userId}`}>
-                  ver pessoa
-                </Link>
-              </p>
-              {job.audioUrl && <audio controls preload="none" src={job.audioUrl} className="w-full" />}
-              {job.transcript && (
-                <details>
-                  <summary className="cursor-pointer font-medium">Transcrição</summary>
-                  <p className="mt-2 whitespace-pre-wrap leading-relaxed">{job.transcript}</p>
-                </details>
-              )}
-              <details>
-                <summary className="cursor-pointer font-medium">Quem gerou</summary>
-                <Fields value={{ ...job.resultMeta, copyVersion: ev.copyVersion, phraseId: ev.phraseId }} />
-              </details>
-            </section>
-
-            {data.siblings.length > 1 && (
-              <section className="space-y-2">
-                <h3 className="font-semibold">Outras respostas desta pessoa nesta análise</h3>
-                <ul className="space-y-1">
-                  {data.siblings
-                    .filter((s) => s.id !== ev.id)
-                    .map((s) => (
-                      <li key={s.id} className="flex flex-wrap items-center gap-2">
-                        <span>{targetText(s)}</span>
-                        <AnswerBadge row={s} />
-                        {s.reasons.map((r) => (
-                          <Badge key={r} variant="secondary">
-                            {reasonLabel(r)}
-                          </Badge>
-                        ))}
-                      </li>
-                    ))}
-                </ul>
-              </section>
-            )}
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function fieldText(value: unknown): string {
-  if (value == null || value === "") return "—";
-  if (typeof value === "boolean") return value ? "Sim" : "Não";
-  if (typeof value === "number") return value.toLocaleString("pt-BR");
-  if (Array.isArray(value)) return value.map(fieldText).join(" · ");
-  if (typeof value === "object") {
-    return Object.entries(value as Record<string, unknown>)
-      .map(([k, v]) => `${k}: ${fieldText(v)}`)
-      .join(" · ");
-  }
-  return String(value);
-}
-
-/** Campos de um objeto em lista (chave e valor), no lugar do JSON cru. */
-function Fields({ value }: { value: unknown }) {
-  if (!value || typeof value !== "object") {
-    return <p className="text-muted-foreground">{fieldText(value)}</p>;
-  }
-  const entries = Object.entries(value as Record<string, unknown>).filter(([, v]) => v != null && v !== "");
-  if (!entries.length) return <p className="text-muted-foreground">Nada registrado.</p>;
-  return (
-    <dl className="divide-y rounded-md border">
-      {entries.map(([k, v]) => (
-        <div key={k} className="grid gap-1 px-3 py-2 sm:grid-cols-[10rem_1fr]">
-          <dt className="text-muted-foreground font-mono text-xs">{k}</dt>
-          <dd className="break-words">{fieldText(v)}</dd>
-        </div>
-      ))}
-    </dl>
   );
 }
 
