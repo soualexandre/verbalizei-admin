@@ -108,6 +108,14 @@ export interface DashboardOverview {
     nextDay: ReturnRate;
     nextWeek: ReturnRate;
   };
+  /** Latência do treino curto (s) nos últimos 7 dias, por perfil; null = sem jobs. API antiga: ausente. */
+  drillLatency?: Record<"text" | "voice" | "full", LatencyStats | null>;
+}
+
+export interface LatencyStats {
+  count: number;
+  p50: number;
+  p95: number;
 }
 
 export interface ReturnRate {

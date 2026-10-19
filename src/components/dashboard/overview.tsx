@@ -1,4 +1,4 @@
-import type { DashboardOverview, ReturnRate } from "@/lib/types";
+import type { DashboardOverview, LatencyStats, ReturnRate } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActiveUsersChart, InteractionsChart, KindLegend } from "./charts";
 import { CohortTable } from "./cohort-table";
@@ -87,6 +87,7 @@ export function Overview({ data }: { data: DashboardOverview }) {
             />
           </div>
         )}
+        {data.drillLatency && <DrillLatencyCard latency={data.drillLatency} />}
         <div className="grid gap-4 lg:grid-cols-2">
           <Card className="gap-4 shadow-none">
             <CardHeader>
@@ -170,6 +171,45 @@ function ReturnCard({ label, help, rate, before }: { label: string; help: string
       previousLabel={rate.previous == null ? `${before}: sem base` : `${before}: ${fmtPct(rate.previous)}`}
       detail={rate.base ? `de ${fmt(rate.base)} dias com micro-treino` : "Ninguém fez micro-treino na base"}
     />
+  );
+}
+
+const PROFILE_LABELS = { text: "Texto", voice: "Voz", full: "Completo" } as const;
+const fmtSeconds = (v: number) => `${v.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} s`;
+
+function DrillLatencyCard({ latency }: { latency: Record<"text" | "voice" | "full", LatencyStats | null> }) {
+  return (
+    <Card className="gap-4 shadow-none">
+      <CardHeader>
+        <CardTitle className="text-base">Latência do treino curto (7 dias)</CardTitle>
+        <CardDescription>Do envio ao resultado, por perfil: mediana (p50) e p95.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <table className="w-full text-sm tabular-nums">
+          <thead>
+            <tr className="text-muted-foreground text-left">
+              <th className="py-1 font-medium">Perfil</th>
+              <th className="py-1 text-right font-medium">Treinos</th>
+              <th className="py-1 text-right font-medium">p50</th>
+              <th className="py-1 text-right font-medium">p95</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(Object.keys(PROFILE_LABELS) as Array<keyof typeof PROFILE_LABELS>).map((k) => {
+              const s = latency[k];
+              return (
+                <tr key={k} className="border-t">
+                  <td className="py-1.5">{PROFILE_LABELS[k]}</td>
+                  <td className="py-1.5 text-right">{s ? fmt(s.count) : "—"}</td>
+                  <td className="py-1.5 text-right">{s ? fmtSeconds(s.p50) : "—"}</td>
+                  <td className="py-1.5 text-right">{s ? fmtSeconds(s.p95) : "—"}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </CardContent>
+    </Card>
   );
 }
 
