@@ -1,7 +1,11 @@
+"use client";
+
+import { useState } from "react";
 import type { DashboardOverview, LatencyStats, ReturnRate } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActiveUsersChart, InteractionsChart, KindLegend } from "./charts";
 import { CohortTable } from "./cohort-table";
+import { DayActivityDialog } from "./day-activity-dialog";
 import { fmt, fmtPct, pointsTrend, relativeTrend, shortDay } from "./format";
 import { KpiCard } from "./kpi-card";
 
@@ -11,6 +15,7 @@ export function Overview({ data }: { data: DashboardOverview }) {
   const before = `${period.days} dias antes`;
   const completion = data.scenarioCompletion;
   const completionRate = completion.started ? (completion.completed / completion.started) * 100 : null;
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
   return (
     <div className="space-y-10">
@@ -92,10 +97,11 @@ export function Overview({ data }: { data: DashboardOverview }) {
           <Card className="gap-4 shadow-none">
             <CardHeader>
               <CardTitle className="text-base">Usuários ativos por dia</CardTitle>
-              <CardDescription>Pessoas com ao menos uma interação no dia.</CardDescription>
+              <CardDescription>Pessoas com ao menos uma interação no dia. Clique num dia para ver quem treinou e em quê.</CardDescription>
             </CardHeader>
             <CardContent>
-              <ActiveUsersChart daily={data.daily} />
+              <ActiveUsersChart daily={data.daily} onSelectDay={setSelectedDay} />
+              <DayActivityDialog day={selectedDay} onClose={() => setSelectedDay(null)} />
             </CardContent>
           </Card>
           <Card className="gap-4 shadow-none">

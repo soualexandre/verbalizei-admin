@@ -112,6 +112,27 @@ export interface DashboardOverview {
   drillLatency?: Record<"text" | "voice" | "full", LatencyStats | null>;
 }
 
+/** GET /admin/overview/day?day=YYYY-MM-DD (verbalizei-api src/admin/day-activity.ts): quem treinou no dia e em quê. */
+export interface DayActivity {
+  day: string;
+  users: Array<{
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+    count: number;
+    items: Array<{
+      kind: InteractionKind;
+      /** Título do cenário, tema do treino curto, "Jogo"… */
+      label: string;
+      /** ISO. */
+      at: string;
+      score: number | null;
+      xp: number | null;
+    }>;
+  }>;
+}
+
 export interface LatencyStats {
   count: number;
   p50: number;

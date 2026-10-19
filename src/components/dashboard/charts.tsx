@@ -33,7 +33,7 @@ function Frame({ children }: { children: React.ReactElement }) {
   );
 }
 
-function TooltipBox({ title, rows }: { title: string; rows: { label: string; value: number; color?: string }[] }) {
+function TooltipBox({ title, rows, hint }: { title: string; rows: { label: string; value: number; color?: string }[]; hint?: string }) {
   return (
     <div className="bg-card min-w-36 rounded-lg border px-3 py-2 text-xs shadow-md">
       <p className="mb-1 font-semibold">{title}</p>
@@ -46,15 +46,24 @@ function TooltipBox({ title, rows }: { title: string; rows: { label: string; val
           <span className="font-medium">{fmt(r.value)}</span>
         </div>
       ))}
+      {hint && <p className="text-muted-foreground mt-1.5 border-t pt-1.5">{hint}</p>}
     </div>
   );
 }
 
-/** Usuários ativos (fizeram ao menos uma interação) em cada dia do período. */
-export function ActiveUsersChart({ daily }: { daily: Daily }) {
+/** Usuários ativos (fizeram ao menos uma interação) em cada dia do período. Clicar num dia abre quem treinou. */
+export function ActiveUsersChart({ daily, onSelectDay }: { daily: Daily; onSelectDay?: (day: string) => void }) {
   return (
     <Frame>
-      <AreaChart data={daily} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+      <AreaChart
+        data={daily}
+        margin={{ top: 8, right: 8, bottom: 0, left: -16 }}
+        className={onSelectDay ? "cursor-pointer" : undefined}
+        onClick={(state) => {
+          const day = state?.activeLabel;
+          if (onSelectDay && day) onSelectDay(String(day));
+        }}
+      >
         <defs>
           <linearGradient id="active-fill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.18} />
@@ -68,7 +77,11 @@ export function ActiveUsersChart({ daily }: { daily: Daily }) {
           cursor={{ stroke: "var(--border)" }}
           content={({ active, payload, label }: TooltipProps<number, string>) =>
             active && payload?.length ? (
-              <TooltipBox title={shortDay(String(label))} rows={[{ label: "Ativos", value: Number(payload[0].value) }]} />
+              <TooltipBox
+                title={shortDay(String(label))}
+                rows={[{ label: "Ativos", value: Number(payload[0].value) }]}
+                hint={onSelectDay && Number(payload[0].value) > 0 ? "Clique para ver quem" : undefined}
+              />
             ) : null
           }
         />
@@ -79,6 +92,7 @@ export function ActiveUsersChart({ daily }: { daily: Daily }) {
           strokeWidth={2}
           fill="url(#active-fill)"
           dot={daily.length <= 7 ? { r: 3, fill: "var(--chart-1)" } : false}
+          activeDot={{ r: 5, fill: "var(--chart-1)", stroke: "var(--card)", strokeWidth: 2 }}
           isAnimationActive={false}
         />
       </AreaChart>
