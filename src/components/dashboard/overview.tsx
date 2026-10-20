@@ -112,7 +112,7 @@ export function Overview({ data }: { data: DashboardOverview }) {
           <Card className="gap-4 shadow-none lg:col-span-2">
             <CardHeader>
               <CardTitle className="text-base">Interações por dia</CardTitle>
-              <KindLegend byKind={kpis.interactions.byKind} />
+              <KindLegend byKind={kpis.interactions.byKind} users={kpis.activeUsers.value} />
             </CardHeader>
             <CardContent>
               <InteractionsChart daily={data.daily} />

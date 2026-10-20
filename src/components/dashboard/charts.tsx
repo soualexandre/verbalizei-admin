@@ -7,6 +7,8 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  ComposedChart,
+  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -101,11 +103,18 @@ export function ActiveUsersChart({ daily, onSelectDay }: { daily: Daily; onSelec
   );
 }
 
-/** Interações por dia, empilhadas por tipo. */
+/** Cor da linha de usuários: neutra, para não se confundir com os tipos das barras. */
+const USERS_COLOR = "var(--foreground)";
+
+/**
+ * Interações por dia, empilhadas por tipo, com a linha dos usuários ativos no
+ * dia. Mesmo eixo: cada usuário ativo tem ao menos uma interação, então a
+ * linha nunca passa do topo da barra.
+ */
 export function InteractionsChart({ daily }: { daily: Daily }) {
   return (
     <Frame>
-      <BarChart data={daily} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+      <ComposedChart data={daily} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
         <CartesianGrid vertical={false} stroke="var(--border)" />
         <XAxis dataKey="day" tickFormatter={shortDay} tick={AXIS} tickLine={false} axisLine={false} interval={tickGap(daily.length)} />
         <YAxis allowDecimals={false} tick={AXIS} tickLine={false} axisLine={false} width={40} />
@@ -117,7 +126,10 @@ export function InteractionsChart({ daily }: { daily: Daily }) {
             return (
               <TooltipBox
                 title={shortDay(String(label))}
-                rows={KINDS.map((k) => ({ label: k.label, value: day[k.key], color: k.color }))}
+                rows={[
+                  { label: "Usuários", value: day.activeUsers, color: USERS_COLOR },
+                  ...KINDS.map((k) => ({ label: k.label, value: day[k.key], color: k.color })),
+                ]}
               />
             );
           }}
@@ -133,15 +145,37 @@ export function InteractionsChart({ daily }: { daily: Daily }) {
             isAnimationActive={false}
           />
         ))}
-      </BarChart>
+        <Line
+          type="monotone"
+          dataKey="activeUsers"
+          stroke={USERS_COLOR}
+          strokeWidth={2}
+          dot={daily.length <= 7 ? { r: 3, fill: USERS_COLOR } : false}
+          activeDot={{ r: 5, fill: USERS_COLOR, stroke: "var(--card)", strokeWidth: 2 }}
+          isAnimationActive={false}
+        />
+      </ComposedChart>
     </Frame>
   );
 }
 
-/** Legenda dos tipos, com o total de cada um no período. */
-export function KindLegend({ byKind }: { byKind: DashboardOverview["kpis"]["interactions"]["byKind"] }) {
+/** Legenda dos tipos, com o total de cada um no período; `users` = pessoas diferentes no período (a linha). */
+export function KindLegend({
+  byKind,
+  users,
+}: {
+  byKind: DashboardOverview["kpis"]["interactions"]["byKind"];
+  users?: number;
+}) {
   return (
     <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+      {users != null && (
+        <li className="text-muted-foreground flex items-center gap-1.5 tabular-nums">
+          <span className="h-0.5 w-3 rounded-full" style={{ background: USERS_COLOR }} />
+          Usuários
+          <span className="text-foreground font-medium">{fmt(users)}</span>
+        </li>
+      )}
       {KINDS.map((k) => (
         <li key={k.key} className="text-muted-foreground flex items-center gap-1.5 tabular-nums">
           <span className="size-2.5 rounded-sm" style={{ background: k.color }} />
