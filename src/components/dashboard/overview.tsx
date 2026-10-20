@@ -3,13 +3,18 @@
 import { useState } from "react";
 import type { DashboardOverview, LatencyStats, ReturnRate } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ActiveUsersChart, InteractionsChart, KindLegend } from "./charts";
+import { ActiveUsersChart, HourlyChart, InteractionsChart, KindLegend, hourLabel } from "./charts";
 import { CohortTable } from "./cohort-table";
 import { DayActivityDialog } from "./day-activity-dialog";
 import { fmt, fmtPct, pointsTrend, relativeTrend, shortDay } from "./format";
 import { KpiCard } from "./kpi-card";
 
-/** A visão geral já carregada: os quatro números, retenção e treinos. */
+/**
+ * A visão geral já carregada, nesta ordem (19/10/2026, pedido do usuário):
+ * 1. os totalizadores de usuários; 2. usuários ativos por dia + coortes
+ * semanais; 3. interações por dia + cenários; depois o resto (horário de uso,
+ * volta ao treino curto, latência).
+ */
 export function Overview({ data }: { data: DashboardOverview }) {
   const { kpis, period, totals } = data;
   const before = `${period.days} dias antes`;
@@ -75,24 +80,7 @@ export function Overview({ data }: { data: DashboardOverview }) {
       </section>
 
       <section className="space-y-4">
-        <SectionTitle title="Retenção" description="Quem usa e quem volta." />
-        {data.microReturn && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <ReturnCard
-              label="Voltou no dia seguinte"
-              help="Dos dias em que alguém fez micro-treino, a % em que fez outro no dia seguinte."
-              rate={data.microReturn.nextDay}
-              before={before}
-            />
-            <ReturnCard
-              label="Voltou na mesma semana"
-              help="Dos dias em que alguém fez micro-treino, a % em que fez outro entre o 2º e o 7º dia depois."
-              rate={data.microReturn.nextWeek}
-              before={before}
-            />
-          </div>
-        )}
-        {data.drillLatency && <DrillLatencyCard latency={data.drillLatency} />}
+        <SectionTitle title="Usuários ativos" description="Quem usa e quem volta." />
         <div className="grid gap-4 lg:grid-cols-2">
           <Card className="gap-4 shadow-none">
             <CardHeader>
@@ -162,6 +150,30 @@ export function Overview({ data }: { data: DashboardOverview }) {
           </Card>
         </div>
       </section>
+
+      {(data.hourly || data.microReturn || data.drillLatency) && (
+        <section className="space-y-4">
+          <SectionTitle title="Hábitos" description="Quando as pessoas usam e como voltam ao treino curto." />
+          {data.hourly && <HourlyCard hourly={data.hourly} />}
+          {data.microReturn && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <ReturnCard
+                label="Voltou no dia seguinte"
+                help="Dos dias em que alguém fez micro-treino, a % em que fez outro no dia seguinte."
+                rate={data.microReturn.nextDay}
+                before={before}
+              />
+              <ReturnCard
+                label="Voltou na mesma semana"
+                help="Dos dias em que alguém fez micro-treino, a % em que fez outro entre o 2º e o 7º dia depois."
+                rate={data.microReturn.nextWeek}
+                before={before}
+              />
+            </div>
+          )}
+          {data.drillLatency && <DrillLatencyCard latency={data.drillLatency} />}
+        </section>
+      )}
     </div>
   );
 }
@@ -215,6 +227,29 @@ function DrillLatencyCard({ latency }: { latency: Record<"text" | "voice" | "ful
           </tbody>
         </table>
       </CardContent>
+    </Card>
+  );
+}
+
+/** Horário de uso: em que hora do dia (Brasília) as interações começam, com o pico dito em frase. */
+function HourlyCard({ hourly }: { hourly: NonNullable<DashboardOverview["hourly"]> }) {
+  const total = hourly.reduce((n, h) => n + h.interactions, 0);
+  const peak = hourly.reduce((best, h) => (h.interactions > best.interactions ? h : best), hourly[0]);
+  return (
+    <Card className="gap-4 shadow-none">
+      <CardHeader>
+        <CardTitle className="text-base">Horário de uso</CardTitle>
+        <CardDescription className="tabular-nums">
+          {total && peak
+            ? `Pico das ${hourLabel(peak.hour)} às ${hourLabel((peak.hour + 1) % 24)}: ${fmt(peak.interactions)} interações de ${fmt(peak.users)} ${peak.users === 1 ? "pessoa" : "pessoas"} (${fmtPct(Math.round((peak.interactions / total) * 100))} do período). Hora em que cada interação começou, no horário de Brasília.`
+            : "Nenhuma interação no período."}
+        </CardDescription>
+      </CardHeader>
+      {total > 0 && (
+        <CardContent>
+          <HourlyChart hourly={hourly} />
+        </CardContent>
+      )}
     </Card>
   );
 }

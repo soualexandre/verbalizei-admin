@@ -6,6 +6,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -149,5 +150,48 @@ export function KindLegend({ byKind }: { byKind: DashboardOverview["kpis"]["inte
         </li>
       ))}
     </ul>
+  );
+}
+
+type Hourly = NonNullable<DashboardOverview["hourly"]>;
+
+/** "20h". */
+export const hourLabel = (h: number) => `${h}h`;
+
+/**
+ * Horário de uso: as 24 horas do dia (fuso de Brasília), com as interações que
+ * começaram em cada uma. A hora de pico em azul forte; as outras em azul claro.
+ */
+export function HourlyChart({ hourly }: { hourly: Hourly }) {
+  const peak = Math.max(0, ...hourly.map((h) => h.interactions));
+  return (
+    <Frame>
+      <BarChart data={hourly} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+        <CartesianGrid vertical={false} stroke="var(--border)" />
+        <XAxis dataKey="hour" tickFormatter={hourLabel} tick={AXIS} tickLine={false} axisLine={false} interval={2} />
+        <YAxis allowDecimals={false} tick={AXIS} tickLine={false} axisLine={false} width={40} />
+        <Tooltip
+          cursor={{ fill: "var(--muted)" }}
+          content={({ active, payload }: TooltipProps<number, string>) => {
+            if (!active || !payload?.length) return null;
+            const h = payload[0].payload as Hourly[number];
+            return (
+              <TooltipBox
+                title={`${hourLabel(h.hour)} às ${hourLabel((h.hour + 1) % 24)}`}
+                rows={[
+                  { label: "Interações", value: h.interactions },
+                  { label: "Pessoas", value: h.users },
+                ]}
+              />
+            );
+          }}
+        />
+        <Bar dataKey="interactions" radius={[3, 3, 0, 0]} maxBarSize={28} isAnimationActive={false}>
+          {hourly.map((h) => (
+            <Cell key={h.hour} fill={peak > 0 && h.interactions === peak ? "var(--chart-1)" : "var(--chart-2)"} />
+          ))}
+        </Bar>
+      </BarChart>
+    </Frame>
   );
 }

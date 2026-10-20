@@ -110,6 +110,8 @@ export interface DashboardOverview {
   };
   /** Latência do treino curto (s) nos últimos 7 dias, por perfil; null = sem jobs. API antiga: ausente. */
   drillLatency?: Record<"text" | "voice" | "full", LatencyStats | null>;
+  /** As 24 horas (fuso de Brasília): interações que começaram em cada hora e pessoas diferentes. API antiga: ausente. */
+  hourly?: Array<{ hour: number; interactions: number; users: number }>;
 }
 
 /** GET /admin/overview/day?day=YYYY-MM-DD (verbalizei-api src/admin/day-activity.ts): quem treinou no dia e em quê. */
