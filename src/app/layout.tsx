@@ -14,7 +14,9 @@ const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
 export const metadata: Metadata = {
   title: "Verbalizei • Admin",
   description: "Painel administrativo do Verbalizei",
-  icons: { icon: "/icone_verbalizei.png", apple: "/icone_verbalizei.png" },
+  // Ícone de fundo verde-lima (Verbalizei03 da marca), diferente do azul do web:
+  // com as duas abas abertas, dá para achar o admin de relance (pedido do usuário, 25/10/2026).
+  icons: { icon: "/icone_admin.png", apple: "/icone_admin.png" },
 };
 
 export default function RootLayout({
