@@ -23,6 +23,7 @@ import type {
 import { USER_SEGMENTS } from "@/lib/types";
 import { formatDate, initials } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
+import { UsersSummary } from "@/components/users-summary";
 import { PaginationBar } from "@/components/pagination-bar";
 import {
   PlanBadge,
@@ -114,6 +115,8 @@ export default function UsersPage() {
         title="Usuários"
         description="Gerencie planos, papéis e status. Usuários de teste não aparecem."
       />
+
+      <UsersSummary />
 
       <Card>
         <CardContent className="space-y-4">

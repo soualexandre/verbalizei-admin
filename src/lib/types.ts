@@ -644,3 +644,14 @@ export interface ActivationReport {
   breakdowns: Record<string, Array<{ group: string; signups: number; onboarded: number; enteredRoom: number; spoke: number; returned: number; activation: number | null }>>;
   failures: Array<{ kind: string; code: string; users: number; jobs: number }>;
 }
+
+/** GET /admin/users/summary: totalizadores da tela de Usuários (só pessoas reais). */
+export interface UsersSummary {
+  total: number;
+  new7d: number;
+  new30d: number;
+  active7d: number;
+  paying: number;
+  onboarded: number;
+  neverTrained: number;
+}
