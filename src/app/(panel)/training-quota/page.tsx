@@ -3,18 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  ArrowRight,
-  CalendarClock,
-  Dumbbell,
-  Gauge,
-  History,
-  Loader2,
-  RefreshCw,
-  Save,
-  UserCheck,
-  UserX,
-} from "lucide-react";
+import { ArrowRight, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import type {
@@ -39,8 +28,8 @@ import {
   personLabel,
   quotaKeys,
 } from "@/lib/training-quota";
-import { PageHeader } from "@/components/page-header";
-import { StatCard } from "@/components/stat-card";
+import { ErrorState } from "@/components/error-state";
+import { HeroStat, HeroStats, InsightList, PageHero, Section, type InsightTone } from "@/components/page-hero";
 import { PaginationBar } from "@/components/pagination-bar";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
@@ -49,13 +38,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -82,10 +65,24 @@ export default function TrainingQuotaPage() {
 
   return (
     <>
-      <PageHeader
+      <PageHero
         title="Cota de treinos"
-        description="Quantos treinos o plano gratuito pode fazer por período. Premium e admins não têm cota."
-      />
+        description={
+          data
+            ? `Quantos treinos o plano gratuito pode fazer por período; Premium e admins não têm cota. Período atual: ${formatPeriodKey(data.current.periodKey)}, desde ${formatDate(data.current.periodStart)}, renova em ${formatDateTime(data.current.resetsAt)}.`
+            : "Quantos treinos o plano gratuito pode fazer por período. Premium e admins não têm cota."
+        }
+      >
+        {data ? (
+          <QuotaStats data={data} />
+        ) : isLoading ? (
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-busy="true" aria-label="Carregando os totais">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-[108px] animate-pulse rounded-2xl bg-white/12" />
+            ))}
+          </div>
+        ) : null}
+      </PageHero>
 
       {isError ? (
         <ErrorCard
@@ -97,22 +94,36 @@ export default function TrainingQuotaPage() {
       ) : isLoading || !data ? (
         <OverviewSkeleton />
       ) : (
-        <div className="space-y-6">
-          <Overview data={data} />
+        <Section
+          title="Alterar a regra do plano gratuito"
+          description="A mudança vale na hora, inclusive para o período corrente. Treinos já consumidos continuam contando."
+        >
           <PolicyForm
             // Remount when the saved policy changes so the form re-seeds.
             key={`${data.policy.limit}-${data.policy.period}-${data.policy.updatedAt ?? "default"}`}
             policy={data.policy}
           />
-        </div>
+        </Section>
       )}
 
-      <AuditHistory />
+      <Section
+        title="Histórico de alterações"
+        description="Mudanças de regra e treinos extras concedidos, com autor e motivo."
+      >
+        <AuditHistory />
+      </Section>
+
+      {data && (
+        <Section title="O que os números dizem" description="O período corrente em frases.">
+          <InsightList items={quotaInsights(data)} />
+        </Section>
+      )}
     </>
   );
 }
 
-function Overview({ data }: { data: AdminTrainingQuota }) {
+/** Os totais da faixa: a regra vigente e o uso no período corrente. */
+function QuotaStats({ data }: { data: AdminTrainingQuota }) {
   const { policy, current } = data;
   const atLimitShare =
     current.activeUsers > 0
@@ -120,48 +131,66 @@ function Overview({ data }: { data: AdminTrainingQuota }) {
       : 0;
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-      <StatCard
-        className="sm:col-span-2 xl:col-span-1"
+    <HeroStats cols={4}>
+      <HeroStat
         label="Regra atual"
-        icon={Gauge}
-        value={<span className="text-xl">{formatRule(policy.limit, policy.period)}</span>}
-        hint={
+        value={formatRuleShort(policy.limit, policy.period)}
+        note={
           policy.isDefault || !policy.updatedBy
-            ? "Padrão do sistema (nunca alterada)"
-            : `Alterada por ${personLabel(policy.updatedBy)} em ${formatDateTime(policy.updatedAt)}`
+            ? "Padrão do sistema, nunca alterada"
+            : `Por ${personLabel(policy.updatedBy)} em ${formatDate(policy.updatedAt)}`
         }
+        help={`${formatRule(policy.limit, policy.period)} no plano gratuito.${
+          policy.isDefault || !policy.updatedBy
+            ? ""
+            : ` Alterada por ${personLabel(policy.updatedBy)} em ${formatDateTime(policy.updatedAt)}.`
+        }`}
       />
-      <StatCard
-        label="Período corrente"
-        icon={CalendarClock}
-        value={<span className="text-xl">{formatPeriodKey(current.periodKey)}</span>}
-        hint={`Desde ${formatDate(current.periodStart)} · renova em ${formatDateTime(current.resetsAt)}`}
-      />
-      <StatCard
+      <HeroStat
         label="Treinos consumidos"
-        icon={Dumbbell}
         value={formatNumber(current.consumed)}
-        hint="No período corrente, por usuários sem Premium"
+        note="no período, sem Premium"
+        help="Treinos descontados da cota no período corrente, por usuários sem Premium."
       />
-      <StatCard
+      <HeroStat
         label="Usaram a cota"
-        icon={UserCheck}
         value={formatNumber(current.activeUsers)}
-        hint="Pessoas com ao menos 1 treino descontado no período"
+        note="ao menos 1 treino no período"
+        help="Pessoas com ao menos 1 treino descontado no período corrente."
       />
-      <StatCard
+      <HeroStat
         label="Bateram o limite"
-        icon={UserX}
         value={formatNumber(current.usersAtLimit)}
-        hint={
-          current.activeUsers > 0
-            ? `${atLimitShare}% dos usuários ativos`
-            : "Nenhum usuário ativo no período"
-        }
+        note={current.activeUsers > 0 ? `${atLimitShare}% de quem usou a cota` : "Ninguém usou a cota ainda"}
+        help="Pessoas que já usaram todos os treinos do período e só voltam a treinar na renovação."
       />
-    </div>
+    </HeroStats>
   );
+}
+
+/** As frases do fim da tela, a partir dos mesmos números da faixa. */
+function quotaInsights(data: AdminTrainingQuota): Array<{ text: string; tone: InsightTone }> {
+  const { policy, current } = data;
+  const items: Array<{ text: string; tone: InsightTone }> = [];
+  if (current.activeUsers === 0) {
+    items.push({ text: `Ninguém do plano gratuito treinou em ${formatPeriodKey(current.periodKey).toLowerCase()} até agora.`, tone: "brand" });
+    return items;
+  }
+  const avg = current.consumed / current.activeUsers;
+  items.push({
+    text: `Quem usou a cota fez em média ${avg.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} ${avg === 1 ? "treino" : "treinos"}, de ${policy.limit} ${policy.limit === 1 ? "permitido" : "permitidos"}.`,
+    tone: "brand",
+  });
+  const share = Math.round((current.usersAtLimit / current.activeUsers) * 100);
+  items.push(
+    current.usersAtLimit === 0
+      ? { text: "Ninguém bateu o limite neste período: a cota não está travando o uso.", tone: "green" }
+      : {
+          text: `${formatNumber(current.usersAtLimit)} ${current.usersAtLimit === 1 ? "pessoa bateu" : "pessoas bateram"} o limite (${share}% de quem usou a cota) e só ${current.usersAtLimit === 1 ? "volta" : "voltam"} a treinar em ${formatDateTime(current.resetsAt)}, ou assinando o Premium.`,
+          tone: share >= 30 ? "lime" : "brand",
+        },
+  );
+  return items;
 }
 
 function PolicyForm({ policy }: { policy: TrainingQuotaPolicy }) {
@@ -195,14 +224,7 @@ function PolicyForm({ policy }: { policy: TrainingQuotaPolicy }) {
   });
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Alterar regra do plano gratuito</CardTitle>
-        <CardDescription>
-          A mudança vale na hora, inclusive para o período corrente. Treinos já
-          consumidos continuam contando.
-        </CardDescription>
-      </CardHeader>
+    <Card className="shadow-none">
       <CardContent>
         <form
           className="space-y-4"
@@ -341,16 +363,7 @@ function AuditHistory() {
   const totalPages = data ? Math.max(1, Math.ceil(data.total / (data.pageSize || AUDIT_PAGE_SIZE))) : 1;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <History className="size-4" />
-          Histórico de alterações
-        </CardTitle>
-        <CardDescription>
-          Mudanças de regra e treinos extras concedidos, com autor e motivo.
-        </CardDescription>
-      </CardHeader>
+    <Card className="shadow-none">
       <CardContent className="space-y-4">
         {isError ? (
           <ErrorCard
@@ -460,13 +473,8 @@ function AuditHistory() {
 
 function OverviewSkeleton() {
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-28" />
-        ))}
-      </div>
-      <Skeleton className="h-80" />
+    <div aria-busy="true" aria-label="Carregando a regra">
+      <Skeleton className="h-80 rounded-card" />
     </div>
   );
 }
@@ -484,19 +492,7 @@ function ErrorCard({
   retrying: boolean;
   inline?: boolean;
 }) {
-  const body = (
-    <div className="flex flex-col items-start gap-3">
-      <p className="font-medium">{title}</p>
-      <p className="text-muted-foreground text-sm">
-        {error instanceof Error ? error.message : "Erro desconhecido."} Confira se a API
-        está no ar e tente de novo.
-      </p>
-      <Button variant="outline" size="sm" onClick={onRetry} disabled={retrying}>
-        <RefreshCw className={retrying ? "size-4 animate-spin" : "size-4"} />
-        Tentar de novo
-      </Button>
-    </div>
-  );
+  const body = <ErrorState bare title={title} error={error} onRetry={onRetry} retrying={retrying} />;
   if (inline) return body;
   return (
     <Card>

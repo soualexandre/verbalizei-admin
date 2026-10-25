@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, Download, FileText, RefreshCw } from "lucide-react";
+import { Download, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch, api } from "@/lib/api";
 import type { ActivationReport } from "@/lib/types";
-import { PageHeader } from "@/components/page-header";
+import { ErrorState } from "@/components/error-state";
+import { HeroStat, HeroStats, InsightList, PageHero, Section, HeroStatsSkeleton } from "@/components/page-hero";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,6 +36,7 @@ const BREAKDOWNS: Array<{ key: string; label: string }> = [
  * (`npm run report:activation`), aqui no painel e para baixar — o CSV traz uma
  * linha por pessoa com a etapa em que parou e a próxima ação sugerida. Tudo
  * conta só pessoas reais (sem mocks e admins) cadastradas na janela escolhida.
+ * Padrão do admin (25/10/2026): faixa azul com os totais → gráficos → insights.
  */
 export default function ActivationPage() {
   const [days, setDays] = useState<(typeof PERIODS)[number]>(30);
@@ -68,50 +70,63 @@ export default function ActivationPage() {
 
   return (
     <>
-      <PageHeader
+      <PageHero
         title="Ativação"
         description={`Do cadastro ao hábito: quem se cadastrou nos últimos ${days} dias, onde parou e o que fazer.`}
+        actions={
+          <>
+            <Tabs value={String(days)} onValueChange={(v) => setDays(Number(v) as typeof days)}>
+              <TabsList aria-label="Período">
+                {PERIODS.map((p) => (
+                  <TabsTrigger key={p} value={String(p)} className="tabular-nums">
+                    {p} dias
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+            <Button variant="outline" size="sm" onClick={() => download("csv")} disabled={downloading !== null} title="Baixar CSV (uma linha por pessoa)">
+              <Download className="size-4" />
+              {downloading === "csv" ? (
+                "Baixando…"
+              ) : (
+                <>
+                  <span className="sm:hidden">CSV</span>
+                  <span className="hidden sm:inline">Baixar CSV (por pessoa)</span>
+                </>
+              )}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => download("md")} disabled={downloading !== null} title="Baixar o relatório em Markdown">
+              <FileText className="size-4" />
+              {downloading === "md" ? (
+                "Baixando…"
+              ) : (
+                <>
+                  <span className="sm:hidden">Relatório</span>
+                  <span className="hidden sm:inline">Baixar relatório</span>
+                </>
+              )}
+            </Button>
+          </>
+        }
       >
-        <div className="flex flex-wrap items-center gap-2">
-          <Tabs value={String(days)} onValueChange={(v) => setDays(Number(v) as typeof days)}>
-            <TabsList>
-              {PERIODS.map((p) => (
-                <TabsTrigger key={p} value={String(p)} className="tabular-nums">
-                  {p} dias
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-          <Button variant="outline" size="sm" onClick={() => download("csv")} disabled={downloading !== null}>
-            <Download className="size-4" />
-            {downloading === "csv" ? "Baixando…" : "Baixar CSV (por pessoa)"}
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => download("md")} disabled={downloading !== null}>
-            <FileText className="size-4" />
-            {downloading === "md" ? "Baixando…" : "Baixar relatório"}
-          </Button>
-        </div>
-      </PageHeader>
+        {data ? (
+          <div className={isFetching ? "opacity-70 transition-opacity" : "transition-opacity"}>
+            <ActivationStats totals={data.totals} />
+          </div>
+        ) : isLoading ? (
+          <HeroStatsSkeleton count={6} />
+        ) : null}
+      </PageHero>
 
       {isError && !data ? (
-        <Card className="shadow-none">
-          <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-            <AlertCircle className="text-muted-foreground size-6" />
-            <p className="text-sm">Não foi possível carregar o relatório.</p>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <RefreshCw className="size-4" />
-              Tentar de novo
-            </Button>
-          </CardContent>
-        </Card>
+        <ErrorState title="Não foi possível carregar o relatório." onRetry={() => refetch()} />
       ) : isLoading || !data ? (
-        <div className="space-y-6" aria-busy="true" aria-label="Carregando o relatório">
-          <Skeleton className="h-28 rounded-card" />
-          <Skeleton className="h-64 rounded-card" />
+        <div className="space-y-10" aria-busy="true" aria-label="Carregando o relatório">
           <Skeleton className="h-80 rounded-card" />
+          <Skeleton className="h-64 rounded-card" />
         </div>
       ) : (
-        <div className={isFetching ? "space-y-10 opacity-70 transition-opacity" : "space-y-10 transition-opacity"}>
+        <div className={isFetching ? "space-y-12 opacity-70 transition-opacity" : "space-y-12 transition-opacity"}>
           <Report data={data} />
         </div>
       )}
@@ -119,56 +134,59 @@ export default function ActivationPage() {
   );
 }
 
-function Report({ data }: { data: ActivationReport }) {
-  const t = data.totals;
+/** Os seis totais da janela, na faixa azul: cada etapa com a % dos cadastros. */
+function ActivationStats({ totals: t }: { totals: ActivationReport["totals"] }) {
   const share = (n: number) => (t.signups ? fmtPct(Math.round((n / t.signups) * 100)) : "—");
-  const totals = [
-    { label: "Se cadastraram", value: t.signups, note: "na janela" },
-    { label: "Fizeram alguma coisa", value: t.didSomething, note: `${share(t.didSomething)} · qualquer atividade` },
-    { label: "Ficaram no onboarding", value: t.stuckOnboarding, note: `${share(t.stuckOnboarding)} · não terminaram as perguntas` },
-    { label: "Criaram cenário", value: t.createdScenario, note: `${share(t.createdScenario)} · cenário próprio` },
-    { label: "Falaram numa sala", value: t.spoke, note: `${share(t.spoke)} · a ativação de verdade` },
-    { label: "Treinaram em 2+ dias", value: t.returned, note: `${share(t.returned)} · começando o hábito` },
-  ];
+  return (
+    <HeroStats cols={6}>
+      <HeroStat label="Se cadastraram" value={fmt(t.signups)} note="pessoas reais na janela" help="Contas criadas na janela escolhida, sem usuários de teste e administradores." />
+      <HeroStat
+        label="Fizeram alguma coisa"
+        value={fmt(t.didSomething)}
+        note={`${share(t.didSomething)} dos cadastros`}
+        help="Fizeram qualquer atividade depois do cadastro: onboarding, sala, treino curto, jogo, roteiro ou cenário próprio."
+      />
+      <HeroStat
+        label="Ficaram no onboarding"
+        value={fmt(t.stuckOnboarding)}
+        note={`${share(t.stuckOnboarding)} dos cadastros`}
+        help="Começaram as perguntas de boas-vindas e não terminaram."
+      />
+      <HeroStat
+        label="Criaram cenário"
+        value={fmt(t.createdScenario)}
+        note={`${share(t.createdScenario)} dos cadastros`}
+        help="Criaram um cenário próprio, com o contexto deles."
+      />
+      <HeroStat
+        label="Falaram numa sala"
+        value={fmt(t.spoke)}
+        note={`${share(t.spoke)} · a ativação real`}
+        help="Entraram numa sala e gravaram ao menos um trecho. É a régua de ativação."
+      />
+      <HeroStat
+        label="Treinaram em 2+ dias"
+        value={fmt(t.returned)}
+        note={`${share(t.returned)} · começo do hábito`}
+        help="Treinaram em pelo menos dois dias diferentes: o primeiro sinal de hábito."
+      />
+    </HeroStats>
+  );
+}
+
+
+/**
+ * Abaixo da faixa, no padrão do admin: gráficos (funil e recortes) e depois
+ * os insights (perdas com o que resolve, sinais, quem nunca falou, falhas).
+ */
+function Report({ data }: { data: ActivationReport }) {
   const main = data.funnel.filter((s) => !s.parallel);
   const parallel = data.funnel.filter((s) => s.parallel);
+  const gaps = data.gaps.slice(0, 3);
 
   return (
     <>
-      <section className="grid gap-3 sm:grid-cols-3 xl:grid-cols-6">
-        {totals.map((c) => (
-          <Card key={c.label} className="gap-1 px-4 py-4 shadow-none">
-            <p className="text-sm font-medium">{c.label}</p>
-            <p className="text-2xl font-semibold tracking-tight tabular-nums">{fmt(c.value)}</p>
-            <p className="text-muted-foreground text-xs tabular-nums">{c.note}</p>
-          </Card>
-        ))}
-      </section>
-
-      <section className="space-y-4">
-        <SectionTitle title="Onde estão as perdas" description="As passagens do funil que mais perdem gente, em ordem, com o que costuma resolver." />
-        {data.gaps.length ? (
-          <ol className="grid gap-3 lg:grid-cols-3">
-            {data.gaps.slice(0, 3).map((g, i) => (
-              <Card key={g.to} className="gap-2 px-5 py-5 shadow-none">
-                <p className="text-muted-foreground text-xs font-semibold tabular-nums">{i + 1}ª maior perda</p>
-                <p className="font-semibold leading-snug">
-                  {g.from} → {g.to}
-                </p>
-                <p className="text-2xl font-semibold tabular-nums">
-                  {fmt(g.lost)} <span className="text-muted-foreground text-sm font-normal">pessoas ({g.lostShare == null ? "—" : fmtPct(g.lostShare)} de quem chegou)</span>
-                </p>
-                {g.fix && <p className="text-sm leading-relaxed">{g.fix}</p>}
-              </Card>
-            ))}
-          </ol>
-        ) : (
-          <p className="text-muted-foreground text-sm">Nenhuma perda no período.</p>
-        )}
-      </section>
-
-      <section className="space-y-4">
-        <SectionTitle title="Funil" description="Cada barra é a % dos cadastros que chegou à etapa; ao lado, quanto passou da etapa anterior." />
+      <Section title="Funil" description="Cada barra é a % dos cadastros que chegou à etapa; ao lado, quanto passou da etapa anterior.">
         <Card className="shadow-none">
           <CardContent className="space-y-4 pt-6">
             <ol className="space-y-3">
@@ -191,67 +209,17 @@ function Report({ data }: { data: ActivationReport }) {
                 </li>
               ))}
             </ol>
-            <div className="border-t pt-4">
-              <p className="text-muted-foreground mb-2 text-xs font-medium">Em paralelo (não condicionam as etapas acima)</p>
-              <ul className="grid gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2">
-                {parallel.map((s) => (
-                  <li key={s.key} className="flex justify-between gap-3 tabular-nums">
-                    <span>{s.label}</span>
-                    <span>
-                      <span className="font-semibold">{fmt(s.people)}</span>
-                      <span className="text-muted-foreground"> · {s.ofSignups == null ? "—" : fmtPct(s.ofSignups)}</span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
-
-      <section className="grid gap-4 lg:grid-cols-2">
-        <Card className="min-w-0 gap-4 shadow-none">
-          <CardHeader>
-            <CardTitle className="text-base">Quem nunca falou: onde parou</CardTitle>
-            <CardDescription>A última etapa de cada um e o que fazer (a ação de cada pessoa está no CSV).</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {data.stuckAt.length ? (
-              <ul className="divide-y">
-                {data.stuckAt.map((s) => (
-                  <li key={s.stage} className="flex gap-4 py-3 text-sm">
-                    <span className="w-10 shrink-0 text-right text-lg font-semibold tabular-nums">{fmt(s.people)}</span>
-                    <span className="min-w-0">
-                      <span className="block font-medium">Parou depois de: {s.stage.toLowerCase()}</span>
-                      <span className="text-muted-foreground block">{s.action}</span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-muted-foreground text-sm">Todo mundo da janela já falou numa sala.</p>
-            )}
-          </CardContent>
-        </Card>
-        <Card className="min-w-0 gap-4 shadow-none">
-          <CardHeader>
-            <CardTitle className="text-base">Sinais</CardTitle>
-            <CardDescription>O que os números dizem sobre os bloqueios.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <ul className="list-disc space-y-1.5 pl-5 text-sm leading-snug tabular-nums">
-              {data.signals.map((s) => (
-                <li key={s}>{s}</li>
-              ))}
-            </ul>
-            {data.onboardingDropoff.length > 0 && (
+            {parallel.length > 0 && (
               <div className="border-t pt-4">
-                <p className="mb-2 text-sm font-medium">Onde param no onboarding</p>
-                <ul className="space-y-1 text-sm tabular-nums">
-                  {data.onboardingDropoff.map((d) => (
-                    <li key={d.step} className="flex justify-between gap-3">
-                      <span>{d.step}</span>
-                      <span className="font-semibold">{fmt(d.people)}</span>
+                <p className="text-muted-foreground mb-2 text-sm">Em paralelo (não condicionam as etapas acima):</p>
+                <ul className="grid gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2">
+                  {parallel.map((s) => (
+                    <li key={s.key} className="flex justify-between gap-3 tabular-nums">
+                      <span>{s.label}</span>
+                      <span>
+                        <span className="font-semibold">{fmt(s.people)}</span>
+                        <span className="text-muted-foreground"> · {s.ofSignups == null ? "—" : fmtPct(s.ofSignups)}</span>
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -259,15 +227,100 @@ function Report({ data }: { data: ActivationReport }) {
             )}
           </CardContent>
         </Card>
-      </section>
+      </Section>
 
       <BreakdownSection breakdowns={data.breakdowns} />
 
+      <Section title="Onde estão as perdas" description="As passagens do funil que mais perdem gente, em ordem, com o que costuma resolver.">
+        <Card className="shadow-none">
+          <CardContent className="pt-6">
+            {gaps.length ? (
+              <ol className="grid gap-6 lg:grid-cols-3 lg:gap-8">
+                {gaps.map((g, i) => (
+                  <li key={g.to} className="flex gap-3">
+                    <span
+                      className="bg-brand-50 text-brand-ink flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums"
+                      aria-label={`${i + 1}ª maior perda`}
+                    >
+                      {i + 1}
+                    </span>
+                    <div className="min-w-0 space-y-1.5">
+                      <p className="font-semibold leading-snug">
+                        {g.from} → {g.to}
+                      </p>
+                      <p className="text-sm tabular-nums">
+                        <span className="font-display text-xl font-bold">{fmt(g.lost)}</span>{" "}
+                        <span className="text-muted-foreground">pessoas ficaram ({g.lostShare == null ? "—" : fmtPct(g.lostShare)} de quem chegou)</span>
+                      </p>
+                      {g.fix && <p className="text-sm leading-relaxed">{g.fix}</p>}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="text-muted-foreground text-sm">Nenhuma perda no período.</p>
+            )}
+          </CardContent>
+        </Card>
+      </Section>
+
+      <Section title="O que os números dizem" description="Os sinais sobre os bloqueios e o que fazer com quem ainda não falou.">
+        {data.signals.length > 0 && (
+          <Card className="gap-4 px-6 py-6 shadow-none">
+            <InsightList items={data.signals.map((text) => ({ text, tone: "brand" as const }))} />
+          </Card>
+        )}
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card className="min-w-0 gap-4 shadow-none">
+            <CardHeader>
+              <CardTitle className="text-base">Quem nunca falou: onde parou</CardTitle>
+              <CardDescription>A última etapa de cada um e o que fazer (a ação de cada pessoa está no CSV).</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {data.stuckAt.length ? (
+                <ul className="divide-y">
+                  {data.stuckAt.map((s) => (
+                    <li key={s.stage} className="flex gap-4 py-3 text-sm">
+                      <span className="font-display w-10 shrink-0 text-right text-lg font-bold tabular-nums">{fmt(s.people)}</span>
+                      <span className="min-w-0">
+                        <span className="block font-medium">Parou depois de: {s.stage.toLowerCase()}</span>
+                        <span className="text-muted-foreground block">{s.action}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-muted-foreground text-sm">Todo mundo da janela já falou numa sala.</p>
+              )}
+            </CardContent>
+          </Card>
+          <Card className="min-w-0 gap-4 shadow-none">
+            <CardHeader>
+              <CardTitle className="text-base">Onde param no onboarding</CardTitle>
+              <CardDescription>Quantas pessoas pararam em cada pergunta de boas-vindas.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {data.onboardingDropoff.length > 0 ? (
+                <ul className="divide-y text-sm tabular-nums">
+                  {data.onboardingDropoff.map((d) => (
+                    <li key={d.step} className="flex justify-between gap-3 py-2">
+                      <span>{d.step}</span>
+                      <span className="font-semibold">{fmt(d.people)}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-muted-foreground text-sm">Ninguém da janela parou no meio do onboarding.</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </Section>
+
       {data.failures.length > 0 && (
-        <section className="space-y-4">
-          <SectionTitle title="Análises que falharam" description="Por tipo e código de erro, só das pessoas da janela." />
+        <Section title="Análises que falharam" description="Por tipo e código de erro, só das pessoas da janela.">
           <Card className="shadow-none">
-            <CardContent className="pt-6">
+            <CardContent className="overflow-x-auto pt-6">
               <table className="w-full text-sm tabular-nums">
                 <thead>
                   <tr className="text-muted-foreground text-left">
@@ -290,7 +343,7 @@ function Report({ data }: { data: ActivationReport }) {
               </table>
             </CardContent>
           </Card>
-        </section>
+        </Section>
       )}
 
       <p className="text-muted-foreground text-xs">
@@ -309,9 +362,10 @@ function BreakdownSection({ breakdowns }: { breakdowns: ActivationReport["breakd
   const worst = rated.length > 1 ? rated.reduce((a, b) => ((b.activation ?? 0) < (a.activation ?? 0) ? b : a)) : null;
   const label = BREAKDOWNS.find((b) => b.key === key)?.label ?? key;
   return (
-    <section className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <SectionTitle title="Recortes" description="Quem converte mais, por grupo. Grupos com menos de 3 cadastros não entram no melhor/pior." />
+    <Section
+      title="Recortes"
+      description="Quem converte mais, por grupo. Grupos com menos de 3 cadastros não entram no melhor/pior."
+      aside={
         <Select value={key} onValueChange={setKey}>
           <SelectTrigger className="w-64" aria-label="Recorte">
             <SelectValue />
@@ -324,7 +378,8 @@ function BreakdownSection({ breakdowns }: { breakdowns: ActivationReport["breakd
             ))}
           </SelectContent>
         </Select>
-      </div>
+      }
+    >
       <Card className="shadow-none">
         <CardContent className="space-y-3 pt-6">
           {best && worst && best.group !== worst.group && (
@@ -365,15 +420,6 @@ function BreakdownSection({ breakdowns }: { breakdowns: ActivationReport["breakd
           </div>
         </CardContent>
       </Card>
-    </section>
-  );
-}
-
-function SectionTitle({ title, description }: { title: string; description: string }) {
-  return (
-    <div>
-      <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
-      <p className="text-muted-foreground text-sm">{description}</p>
-    </div>
+    </Section>
   );
 }

@@ -3,101 +3,119 @@
 import { useState } from "react";
 import type { DashboardOverview, LatencyStats, ReturnRate } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarDays, Clock, Repeat, Sparkles, UserPlus, Users } from "lucide-react";
+import { HeroStat, HeroStats, InsightList, Section, type InsightTone } from "@/components/page-hero";
 import { ActiveUsersChart, HourlyChart, InteractionsChart, KindLegend, WeekHourHeatmap, WeekdayChart } from "./charts";
 import { CohortTable } from "./cohort-table";
 import { DayActivityDialog } from "./day-activity-dialog";
 import { fmt, fmtPct, pointsTrend, relativeTrend, shortDay } from "./format";
-import { KpiCard } from "./kpi-card";
 import { dayparts, funnelSentence, funnelSteps, hourSentence, slotSentence, summarySentences, weekdaySentence } from "./insights";
 
 /**
- * A visão geral já carregada. Desde 25/10/2026 (pedido do usuário: o painel
- * tem de se explicar sozinho) cada bloco abre com a frase que lê o número, e a
- * ordem é: resumo em frases → totalizadores → quando as pessoas treinam (dia da
- * semana, horário, dia × hora) → do cadastro ao hábito (funil + coortes) →
- * ativos por dia → o que treinam → volta ao treino curto → detalhes técnicos.
+ * Os totalizadores da Visão geral, na faixa azul (PageHero). Padrão do admin
+ * desde 25/10/2026: totalizadores no topo → gráficos → insights.
  */
-export function Overview({ data }: { data: DashboardOverview }) {
+export function OverviewStats({ data }: { data: DashboardOverview }) {
   const { kpis, period, totals } = data;
   const before = `${period.days} dias antes`;
+  return (
+    <HeroStats cols={data.microReturn ? 6 : 4}>
+      <HeroStat
+        label="Pessoas que treinaram"
+        help="Pessoas que treinaram ao menos uma vez no período (cenário, gravação, treino curto ou jogo)."
+        value={fmt(kpis.activeUsers.value)}
+        trend={relativeTrend(kpis.activeUsers.value, kpis.activeUsers.previous)}
+        note={totals.users ? `${fmtPct(Math.round((kpis.activeUsers.value / totals.users) * 1000) / 10)} da base · ${before}: ${fmt(kpis.activeUsers.previous)}` : undefined}
+      />
+      <HeroStat
+        label="Novos cadastros"
+        help="Contas criadas no período, e quantas já treinaram."
+        value={fmt(kpis.newUsers.value)}
+        trend={relativeTrend(kpis.newUsers.value, kpis.newUsers.previous)}
+        note={
+          kpis.newUsers.value
+            ? `${fmt(kpis.newUsers.activated)} já treinaram (${fmtPct(Math.round((kpis.newUsers.activated / kpis.newUsers.value) * 100))})`
+            : "Nenhum cadastro no período"
+        }
+      />
+      <HeroStat
+        label="Treinos feitos"
+        help="Tudo o que foi treinado: cenários, gravações, treinos curtos e jogos."
+        value={fmt(kpis.interactions.value)}
+        trend={relativeTrend(kpis.interactions.value, kpis.interactions.previous)}
+        note={
+          kpis.activeUsers.value
+            ? `${(kpis.interactions.value / kpis.activeUsers.value).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} por pessoa que treinou`
+            : undefined
+        }
+      />
+      <HeroStat
+        label="Voltaram a treinar"
+        help="De quem treinou no período anterior, quantos voltaram a treinar neste (retenção)."
+        value={kpis.retention.value == null ? "—" : fmtPct(kpis.retention.value)}
+        trend={pointsTrend(kpis.retention.value, kpis.retention.previous)}
+        note={kpis.retention.base ? `dos ${fmt(kpis.retention.base)} do período anterior` : "Ninguém no período anterior"}
+      />
+      {/* A volta ao treino curto é número, não conclusão: fica na faixa (revisão de 25/10/2026). */}
+      {data.microReturn && (
+        <>
+          <ReturnStat
+            label="Treino curto: volta no dia seguinte"
+            help="Dos dias em que alguém fez um treino curto, quantos tiveram outro no dia seguinte."
+            rate={data.microReturn.nextDay}
+          />
+          <ReturnStat
+            label="Treino curto: volta na semana"
+            help="Dos dias em que alguém fez um treino curto, quantos tiveram outro entre 2 e 7 dias depois."
+            rate={data.microReturn.nextWeek}
+          />
+        </>
+      )}
+    </HeroStats>
+  );
+}
+
+/** A linha de base da faixa: o período e o tamanho da base. */
+export function overviewDescription(data: DashboardOverview): string {
+  const { period, totals } = data;
+  return `${shortDay(period.from)} a ${shortDay(period.to)}, comparado aos ${period.days} dias anteriores · base de ${fmt(totals.users)} pessoas, ${fmt(totals.premium)} premium.`;
+}
+
+const CHART_CARD = "min-w-0 gap-4 shadow-none";
+
+/**
+ * A visão geral abaixo da faixa: gráficos primeiro (quando treinam, quem
+ * treinou dia a dia, o que treinam, do cadastro ao hábito), insights depois
+ * (o período em frases, os cenários mais treinados, a volta ao treino curto).
+ */
+export function Overview({ data }: { data: DashboardOverview }) {
+  const { kpis, period } = data;
   const completion = data.scenarioCompletion;
   const completionRate = completion.started ? (completion.completed / completion.started) * 100 : null;
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const summary = summarySentences(data);
+  // Sentido da cor igual ao da faixa: azul = uso, verde = bom sinal.
+  const tones: InsightTone[] = ["brand", "green", "brand", "brand", "brand"];
 
   return (
-    <div className="space-y-10">
-      <section className="space-y-3">
-        <p className="text-muted-foreground text-sm tabular-nums">
-          {shortDay(period.from)} a {shortDay(period.to)} · Base: {fmt(totals.users)} usuários, {fmt(totals.premium)}{" "}
-          premium{totals.admins ? ` · ${fmt(totals.admins)} admins fora da conta` : ""}
-        </p>
-        <SummaryCard sentences={summarySentences(data)} />
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <KpiCard
-            label="Usuários ativos"
-            help="Pessoas que treinaram ao menos uma vez no período."
-            value={fmt(kpis.activeUsers.value)}
-            trend={relativeTrend(kpis.activeUsers.value, kpis.activeUsers.previous)}
-            previousLabel={`${before}: ${fmt(kpis.activeUsers.previous)}`}
-            detail={totals.users ? `${fmtPct(Math.round((kpis.activeUsers.value / totals.users) * 1000) / 10)} da base` : undefined}
-          />
-          <KpiCard
-            label="Novos usuários"
-            help="Contas criadas no período, e quantas já treinaram."
-            value={fmt(kpis.newUsers.value)}
-            trend={relativeTrend(kpis.newUsers.value, kpis.newUsers.previous)}
-            previousLabel={`${before}: ${fmt(kpis.newUsers.previous)}`}
-            detail={
-              kpis.newUsers.value
-                ? `${fmt(kpis.newUsers.activated)} já treinaram (${fmtPct(Math.round((kpis.newUsers.activated / kpis.newUsers.value) * 100))})`
-                : "Nenhum cadastro no período"
-            }
-          />
-          <KpiCard
-            label="Treinos feitos"
-            help="Tudo o que foi treinado: cenários, gravações, treinos curtos e jogos."
-            value={fmt(kpis.interactions.value)}
-            trend={relativeTrend(kpis.interactions.value, kpis.interactions.previous)}
-            previousLabel={`${before}: ${fmt(kpis.interactions.previous)}`}
-            detail={
-              kpis.activeUsers.value
-                ? `${(kpis.interactions.value / kpis.activeUsers.value).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} por pessoa que treinou`
-                : undefined
-            }
-          />
-          <KpiCard
-            label="Retenção"
-            help="De quem treinou no período anterior, quantos voltaram a treinar neste."
-            value={kpis.retention.value == null ? "—" : fmtPct(kpis.retention.value)}
-            trend={pointsTrend(kpis.retention.value, kpis.retention.previous)}
-            previousLabel={
-              kpis.retention.previous == null ? `${before}: sem base` : `${before}: ${fmtPct(kpis.retention.previous)}`
-            }
-            detail={
-              kpis.retention.base
-                ? `dos ${fmt(kpis.retention.base)} ativos no período anterior`
-                : "Ninguém ativo no período anterior"
-            }
-          />
-        </div>
-      </section>
-
+    <div className="space-y-12">
       {data.weekday && data.heatmap && data.hourly && (
-        <section className="space-y-4">
-          <SectionTitle title="Quando as pessoas treinam" description="Dia da semana e horário, no fuso de Brasília. Bom para escolher a hora de lembretes, posts e e-mails." />
+        <Section title="Quando as pessoas treinam" description="Dia da semana e horário, no fuso de Brasília. Bom para escolher a hora de lembretes, posts e e-mails.">
           <div className="grid gap-4 lg:grid-cols-2">
-            <Card className="min-w-0 gap-4 shadow-none">
+            <Card className={CHART_CARD}>
               <CardHeader>
                 <CardTitle className="text-base">Dia da semana</CardTitle>
                 <CardDescription className="text-foreground/80 tabular-nums">{weekdaySentence(data.weekday)}</CardDescription>
-                <CardDescription>Média de treinos em cada dia (em 30 dias há 4 ou 5 de cada, por isso média e não total).</CardDescription>
+                <CardDescription>
+                  {period.days >= 14
+                    ? `Média de treinos em cada dia da semana (em ${period.days} dias cada um aparece mais de uma vez, por isso média e não total).`
+                    : "Treinos em cada dia da semana nos últimos 7 dias."}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <WeekdayChart weekday={data.weekday} />
               </CardContent>
             </Card>
-            <Card className="min-w-0 gap-4 shadow-none">
+            <Card className={CHART_CARD}>
               <CardHeader>
                 <CardTitle className="text-base">Horário</CardTitle>
                 <CardDescription className="text-foreground/80 tabular-nums">{hourSentence(data.hourly)}</CardDescription>
@@ -108,7 +126,7 @@ export function Overview({ data }: { data: DashboardOverview }) {
               </CardContent>
             </Card>
           </div>
-          <Card className="min-w-0 gap-4 shadow-none">
+          <Card className={CHART_CARD}>
             <CardHeader>
               <CardTitle className="text-base">Dia da semana × horário</CardTitle>
               <CardDescription className="text-foreground/80 tabular-nums">{slotSentence(data.heatmap)}</CardDescription>
@@ -117,14 +135,36 @@ export function Overview({ data }: { data: DashboardOverview }) {
               <WeekHourHeatmap heatmap={data.heatmap} />
             </CardContent>
           </Card>
-        </section>
+        </Section>
       )}
 
-      <section className="space-y-4">
-        <SectionTitle title="Do cadastro ao hábito" description="Quem chega, quem começa a treinar e quem continua." />
+      <Section title="Quem treinou, dia a dia" description="Clique num dia para ver quem treinou e em quê.">
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card className={CHART_CARD}>
+            <CardHeader>
+              <CardTitle className="text-base">Pessoas que treinaram por dia</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ActiveUsersChart daily={data.daily} onSelectDay={setSelectedDay} />
+              <DayActivityDialog day={selectedDay} onClose={() => setSelectedDay(null)} />
+            </CardContent>
+          </Card>
+          <Card className={CHART_CARD}>
+            <CardHeader>
+              <CardTitle className="text-base">Treinos por dia, por tipo</CardTitle>
+              <KindLegend byKind={kpis.interactions.byKind} users={kpis.activeUsers.value} />
+            </CardHeader>
+            <CardContent>
+              <InteractionsChart daily={data.daily} />
+            </CardContent>
+          </Card>
+        </div>
+      </Section>
+
+      <Section title="Do cadastro ao hábito" description="Quem chega, quem começa a treinar e quem continua.">
         <div className="grid gap-4 lg:grid-cols-2">
           {data.activation && <FunnelCard activation={data.activation} days={period.days} />}
-          <Card className="min-w-0 gap-4 shadow-none">
+          <Card className={CHART_CARD}>
             <CardHeader>
               <CardTitle className="text-base">Quem continua, semana a semana</CardTitle>
               <CardDescription>
@@ -136,34 +176,14 @@ export function Overview({ data }: { data: DashboardOverview }) {
             </CardContent>
           </Card>
         </div>
-      </section>
+      </Section>
 
-      <section className="space-y-4">
-        <SectionTitle title="Quem treinou, dia a dia" description="Clique num dia para ver quem treinou e em quê." />
-        <Card className="min-w-0 gap-4 shadow-none">
-          <CardHeader>
-            <CardTitle className="text-base">Pessoas que treinaram por dia</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ActiveUsersChart daily={data.daily} onSelectDay={setSelectedDay} />
-            <DayActivityDialog day={selectedDay} onClose={() => setSelectedDay(null)} />
-          </CardContent>
-        </Card>
-      </section>
-
-      <section className="space-y-4">
-        <SectionTitle title="O que treinam" description="Os tipos de treino e os cenários mais usados." />
-        <div className="grid gap-4 lg:grid-cols-3">
-          <Card className="min-w-0 gap-4 shadow-none lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-base">Treinos por dia, por tipo</CardTitle>
-              <KindLegend byKind={kpis.interactions.byKind} users={kpis.activeUsers.value} />
-            </CardHeader>
-            <CardContent>
-              <InteractionsChart daily={data.daily} />
-            </CardContent>
+      <Section title="O que os números dizem" description="O período em frases e os cenários mais treinados.">
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card className="gap-4 px-6 py-6 shadow-none">
+            <InsightList columns={1} items={summary.map((text, i) => ({ text, tone: tones[i] ?? "brand" }))} />
           </Card>
-          <Card className="min-w-0 gap-4 shadow-none">
+          <Card className={CHART_CARD}>
             <CardHeader>
               <CardTitle className="text-base">Cenários mais treinados</CardTitle>
               <CardDescription className="tabular-nums">
@@ -177,12 +197,12 @@ export function Overview({ data }: { data: DashboardOverview }) {
                 <ol className="divide-y">
                   {data.topScenarios.map((s, i) => (
                     <li key={s.id} className="flex items-center gap-3 py-2.5 text-sm">
-                      <span className="text-muted-foreground w-4 text-right tabular-nums">{i + 1}</span>
+                      <span className="bg-brand-50 text-brand-ink flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums">{i + 1}</span>
                       <span className="min-w-0 flex-1 truncate" title={s.title}>
                         {s.title}
                       </span>
                       <span className="text-right tabular-nums">
-                        <span className="font-medium">{fmt(s.sessions)}</span>
+                        <span className="font-semibold">{fmt(s.sessions)}</span>
                         <span className="text-muted-foreground"> · {fmt(s.users)} pessoas</span>
                       </span>
                     </li>
@@ -194,30 +214,10 @@ export function Overview({ data }: { data: DashboardOverview }) {
             </CardContent>
           </Card>
         </div>
-      </section>
-
-      {data.microReturn && (
-        <section className="space-y-4">
-          <SectionTitle title="Volta ao treino curto" description="Quem faz um treino curto volta a fazer outro?" />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <ReturnCard
-              label="Voltou no dia seguinte"
-              help="Dos dias em que alguém fez um treino curto, quantos tiveram outro no dia seguinte."
-              rate={data.microReturn.nextDay}
-              before={before}
-            />
-            <ReturnCard
-              label="Voltou na mesma semana"
-              help="Dos dias em que alguém fez um treino curto, quantos tiveram outro entre 2 e 7 dias depois."
-              rate={data.microReturn.nextWeek}
-              before={before}
-            />
-          </div>
-        </section>
-      )}
+      </Section>
 
       {data.drillLatency && (
-        <details className="group rounded-card border">
+        <details className="group rounded-card bg-card border">
           <summary className="cursor-pointer list-none px-5 py-4 text-sm font-medium [&::-webkit-details-marker]:hidden">
             Detalhes técnicos <span className="text-muted-foreground font-normal">· tempo da análise do treino curto</span>
           </summary>
@@ -230,16 +230,15 @@ export function Overview({ data }: { data: DashboardOverview }) {
   );
 }
 
-/** A volta depois do micro-treino, com a variação em pontos percentuais. */
-function ReturnCard({ label, help, rate, before }: { label: string; help: string; rate: ReturnRate; before: string }) {
+/** A volta depois do treino curto, na faixa, com a variação em pontos percentuais. */
+function ReturnStat({ label, help, rate }: { label: string; help: string; rate: ReturnRate }) {
   return (
-    <KpiCard
+    <HeroStat
       label={label}
       help={help}
       value={rate.value == null ? "—" : fmtPct(rate.value)}
       trend={pointsTrend(rate.value, rate.previous)}
-      previousLabel={rate.previous == null ? `${before}: sem base` : `${before}: ${fmtPct(rate.previous)}`}
-      detail={rate.base ? `de ${fmt(rate.base)} dias com micro-treino` : "Ninguém fez micro-treino na base"}
+      note={rate.base ? `de ${fmt(rate.base)} dias com treino curto` : "Ninguém fez treino curto"}
     />
   );
 }
@@ -283,29 +282,6 @@ function DrillLatencyCard({ latency }: { latency: Record<"text" | "voice" | "ful
   );
 }
 
-/** O resumo do topo: o período em frases, cada uma lendo um número. */
-function SummaryCard({ sentences }: { sentences: string[] }) {
-  const icons = [Users, UserPlus, CalendarDays, Clock, Repeat];
-  return (
-    <Card className="gap-3 px-5 py-5 shadow-none">
-      <p className="flex items-center gap-2 text-sm font-semibold">
-        <Sparkles className="text-primary size-4" aria-hidden />
-        Resumo do período
-      </p>
-      <ul className="grid gap-x-8 gap-y-2.5 md:grid-cols-2">
-        {sentences.map((text, i) => {
-          const Icon = icons[i] ?? Sparkles;
-          return (
-            <li key={i} className="flex gap-2.5 text-sm leading-snug tabular-nums">
-              <Icon className="text-muted-foreground mt-0.5 size-4 shrink-0" aria-hidden />
-              {text}
-            </li>
-          );
-        })}
-      </ul>
-    </Card>
-  );
-}
 
 /** Os quatro turnos com a fatia de cada um, para ler o horário sem contar barras. */
 function DaypartChips({ hourly }: { hourly: NonNullable<DashboardOverview["hourly"]> }) {
@@ -363,12 +339,4 @@ function FunnelCard({ activation, days }: { activation: NonNullable<DashboardOve
   );
 }
 
-function SectionTitle({ title, description }: { title: string; description: string }) {
-  return (
-    <div>
-      <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
-      <p className="text-muted-foreground text-sm">{description}</p>
-    </div>
-  );
-}
 

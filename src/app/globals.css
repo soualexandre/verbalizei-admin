@@ -4,52 +4,71 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Linguagem do web e do app (verbalizei_web/app/globals.css, DESIGN.md do
-     app): um azul só para marca e ação, neutros frios do Tailwind, superfície
-     levemente cinza com cartões brancos de borda fina, cantos de 16 px. */
+  /* Identidade oficial do Verbalizei (manual de marca, out/2026; a mesma do
+     web, verbalizei_web/app/globals.css): azul #0063de principal, verde
+     #81a641, lima #cfdc3e como acento de energia, branco. Não há laranja;
+     vermelho só para erro. Raleway nos títulos, DM Sans no texto.
+     Redesenho de 25/10/2026: cada tela abre numa faixa azul com os
+     totalizadores (PageHero), depois gráficos, depois insights. */
   --radius: 0.75rem;
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #f5f8fc;
+  --foreground: #0b1b33;
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #0b1b33;
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #0c4cae;
+  --popover-foreground: #0b1b33;
+  --primary: #0063de;
   --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #eef4ff;
-  --accent-foreground: #0a3d8f;
-  --destructive: #ef4444;
-  --border: #e5e7eb;
-  --input: #e2e8f0;
-  --ring: #2d6fbe;
-  /* Gráficos, cor por significado (lib/design/identity.ts do web):
-     azul = cenários, azul claro = gravações, verde = micro-treinos,
-     laranja = jogos (XP). */
-  --chart-1: #0c4cae;
+  --secondary: #eef4fd;
+  --secondary-foreground: #0b1b33;
+  --muted: #eef2f7;
+  --muted-foreground: #586a82;
+  --accent: #eef4fd;
+  --accent-foreground: #004ba6;
+  --destructive: #d93a3a;
+  --border: #e2e8f1;
+  --input: #d9e1ec;
+  --ring: #0063de;
+
+  /* Escalas da marca (as mesmas do web): 50 fundo suave, 600 cheio, ink texto. */
+  --brand: #0063de;
+  --brand-ink: #004ba6;
+  --brand-deep: #003f8f;
+  --brand-50: #eef4fd;
+  --brand-100: #dce8fb;
+  --green: #81a641;
+  --green-600: #5f8530;
+  --green-ink: #4f6e22;
+  --green-50: #f1f6e6;
+  --lime: #cfdc3e;
+  --lime-600: #a8b524;
+  --lime-ink: #5e6b0c;
+  --lime-50: #f6f8d9;
+
+  /* Gráficos (validados no validate_palette da skill dataviz, 25/10/2026):
+     cenários azul, gravações azul claro, micro-treinos verde, jogos lima. */
+  --chart-1: #0063de;
   --chart-2: #7fb0ee;
-  --chart-3: #22c55e;
-  --chart-4: #f97316;
-  --chart-5: #94a3b8;
-  --success: #15803d;
-  --success-soft: #dcfce7;
-  --warning: #c2410c;
-  --warning-soft: #ffedd5;
+  --chart-3: #5f8530;
+  --chart-4: #a8b524;
+  --chart-5: #9aa8bb;
+  --success: #4f6e22;
+  --success-soft: #e7f0d6;
+  /* Queda: lima de atenção (a marca não tem laranja; vermelho é só erro). */
+  --warning: #5e6b0c;
+  --warning-soft: #eef3b8;
   --sidebar: #ffffff;
-  --sidebar-foreground: #0f172a;
-  --sidebar-primary: #0c4cae;
+  --sidebar-foreground: #0b1b33;
+  --sidebar-primary: #0063de;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #eef4ff;
-  --sidebar-accent-foreground: #0a3d8f;
-  --sidebar-border: #e5e7eb;
-  --sidebar-ring: #2d6fbe;
+  --sidebar-accent: #eef4fd;
+  --sidebar-accent-foreground: #004ba6;
+  --sidebar-border: #e2e8f1;
+  --sidebar-ring: #0063de;
   /* Mapa de calor divergente: abaixo da média ← cinza → acima da média */
   --heat-pos: #7fb0ee;
-  --heat-neg: #f0a29b;
-  --heat-mid: oklch(0.955 0.004 286);
+  --heat-neg: #d9de8a;
+  --heat-mid: #eef2f7;
 }
 
 .dark {
@@ -85,7 +104,7 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.552 0.016 285.938);
   --heat-pos: #1c5cab;
-  --heat-neg: #a8403b;
+  --heat-neg: #8a9420;
   --heat-mid: oklch(0.3 0.006 286);
 }
 
@@ -128,6 +147,20 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-green: var(--green);
+  --color-green-600: var(--green-600);
+  --color-green-ink: var(--green-ink);
+  --color-green-50: var(--green-50);
+  --color-lime: var(--lime);
+  --color-lime-600: var(--lime-600);
+  --color-lime-ink: var(--lime-ink);
+  --color-lime-50: var(--lime-50);
+  --font-display: var(--font-raleway), var(--font-sans);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -147,4 +180,82 @@ body {
   color: var(--foreground);
   font-feature-settings: "rlig" 1, "calt" 1;
   letter-spacing: -0.005em;
+}
+
+/* Títulos em Raleway (identidade oficial); o resto em DM Sans. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-raleway), var(--font-sans);
+  letter-spacing: -0.015em;
+}
+
+/* As partes do navegador também vestem a marca. */
+::selection {
+  background: var(--lime);
+  color: #0b1b33;
+}
+:focus-visible {
+  outline-color: var(--brand);
+}
+html {
+  scrollbar-color: #c3cfdf transparent;
+  accent-color: var(--brand);
+}
+
+/* Controles na faixa azul (PageHero): as abas e os botões de contorno ficam
+   brancos translúcidos, com o ativo em branco cheio. */
+.hero-actions [data-slot="tabs-list"] {
+  background: rgb(255 255 255 / 0.14);
+  color: #fff;
+}
+.hero-actions [data-slot="tabs-trigger"] {
+  color: rgb(255 255 255 / 0.92);
+}
+.hero-actions [data-slot="tabs-trigger"][data-state="active"] {
+  background: #fff;
+  color: var(--brand-ink);
+}
+.hero-actions [data-slot="button"][data-variant="outline"] {
+  background: rgb(255 255 255 / 0.12);
+  border-color: rgb(255 255 255 / 0.35);
+  color: #fff;
+}
+.hero-actions [data-slot="button"][data-variant="outline"]:hover {
+  background: rgb(255 255 255 / 0.2);
+}
+
+/* Seletor, campo e botão principal dentro da faixa: o seletor translúcido,
+   o campo branco (lê-se como campo) e o botão principal branco com texto azul. */
+.hero-actions [data-slot="select-trigger"] {
+  background: rgb(255 255 255 / 0.12);
+  border-color: rgb(255 255 255 / 0.35);
+  color: #fff;
+}
+.hero-actions [data-slot="select-trigger"] svg {
+  color: #fff;
+  opacity: 0.9;
+}
+.hero-actions [data-slot="input"] {
+  background: #fff;
+  border-color: transparent;
+  color: var(--foreground);
+}
+.hero-actions [data-slot="button"][data-variant="default"] {
+  background: #fff;
+  color: var(--brand-ink);
+}
+.hero-actions [data-slot="button"][data-variant="default"]:hover {
+  background: rgb(255 255 255 / 0.9);
+}
+
+/* Abas com muitas opções rolam de lado em vez de vazar da tela (celular). */
+[data-slot="tabs-list"] {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.hero-actions {
+  min-width: 0;
+  max-width: 100%;
 }

@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Download, Loader2, MessageSquareText, RefreshCw, Save } from "lucide-react";
+import { Download, Loader2, MessageSquareText, RefreshCw, Save } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
@@ -23,7 +23,8 @@ import {
   type EvaluationSettings,
   type EvaluationSummary,
 } from "@/lib/feedback-evaluations";
-import { PageHeader } from "@/components/page-header";
+import { ErrorState } from "@/components/error-state";
+import { HeroStat, HeroStats, InsightList, PageHero, Section, type InsightTone, HeroStatsSkeleton } from "@/components/page-hero";
 import { PaginationBar } from "@/components/pagination-bar";
 import {
   AnswerBadge,
@@ -92,28 +93,52 @@ function FeedbackEvaluations() {
     [navigate],
   );
 
+  // O mesmo resumo da aba Visão geral (mesma chave de cache): os totais da faixa.
+  const summary = useQuery({
+    queryKey: evalKeys.summary(days),
+    queryFn: () => api.get<EvaluationSummary>(`/admin/feedback-evaluations/summary?days=${days}`),
+  });
+
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHero
         title="Avaliações de feedback"
         description="O que as pessoas dizem sobre o retorno das análises, amarrado ao resultado e à versão que o gerou."
-      >
-        {tab !== "relatorio" && (
-          <>
-            <Select value={String(days)} onValueChange={(v) => setDays(Number(v))}>
-              <SelectTrigger className="w-40" aria-label="Período">
+        actions={
+          tab !== "relatorio" && (
+            <>
+              <Select value={String(days)} onValueChange={(v) => setDays(Number(v))}>
+                <SelectTrigger className="w-40" aria-label="Período">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7">Últimos 7 dias</SelectItem>
-                <SelectItem value="28">Últimos 28 dias</SelectItem>
-                <SelectItem value="90">Últimos 90 dias</SelectItem>
-              </SelectContent>
-            </Select>
-            <ExportButton days={days} />
-          </>
-        )}
-      </PageHeader>
+                <SelectContent>
+                  <SelectItem value="7">Últimos 7 dias</SelectItem>
+                  <SelectItem value="28">Últimos 28 dias</SelectItem>
+                  <SelectItem value="90">Últimos 90 dias</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                onClick={() => summary.refetch()}
+                disabled={summary.isFetching}
+                aria-label="Atualizar os números"
+              >
+                <RefreshCw className={summary.isFetching ? "size-4 animate-spin" : "size-4"} />
+                Atualizar
+              </Button>
+              <ExportButton days={days} />
+            </>
+          )
+        }
+      >
+        {summary.data ? (
+          <div className={summary.isFetching ? "opacity-70 transition-opacity" : "transition-opacity"}>
+            <SummaryStats data={summary.data} />
+          </div>
+        ) : summary.isLoading ? (
+          <HeroStatsSkeleton count={5} />
+        ) : null}
+      </PageHero>
 
       <Tabs value={tab} onValueChange={(v) => navigate(v as Tab, reportPerson?.id ?? null)}>
         <TabsList>
@@ -157,121 +182,152 @@ function Overview({ days }: { days: number }) {
   }
   if (isError || !data) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-between gap-4 py-6">
-          <p className="text-destructive text-sm">{(error as Error)?.message ?? "Não foi possível carregar o resumo."}</p>
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
-            Tentar de novo
-          </Button>
-        </CardContent>
-      </Card>
+      <ErrorState title="Não foi possível carregar o resumo das avaliações." error={error} onRetry={() => refetch()} />
     );
   }
 
   const self = data.funnel.selfAssessment;
+  const insights: Array<{ text: React.ReactNode; tone: InsightTone }> = [
+    { text: overviewSentence(data), tone: data.global.rate != null && data.global.rate >= 0.7 ? "green" : "brand" },
+  ];
+  if (self.shown > 0) {
+    insights.push({
+      text: `A autoavaliação na espera apareceu ${self.shown} ${self.shown === 1 ? "vez" : "vezes"} e foi respondida em ${pct(self.answered / self.shown)} delas.`,
+      tone: "brand",
+    });
+  }
+  if (data.topReasons.length > 0) {
+    const top = data.topReasons[0];
+    insights.push({
+      text: `O motivo mais citado foi “${reasonLabel(top.reason)}”, em ${top.n} ${top.n === 1 ? "resposta" : "respostas"}.`,
+      tone: "brand",
+    });
+  }
+  for (const a of data.alerts) insights.push({ text: alertSentence(a), tone: "lime" });
+  if (data.alerts.length === 0 && data.global.n > 0) {
+    insights.push({ text: "Nenhum recorte com concordância baixa ou queda forte na última semana.", tone: "green" });
+  }
+
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardContent className="flex items-start justify-between gap-4 py-5">
-          <div className="space-y-2">
-            <p className="text-sm leading-relaxed">{overviewSentence(data)}</p>
-            {self.shown > 0 && (
-              <p className="text-muted-foreground text-sm">
-                A autoavaliação na espera apareceu {self.shown} {self.shown === 1 ? "vez" : "vezes"} e foi respondida em{" "}
-                {pct(self.answered / self.shown)} delas.
-              </p>
-            )}
-          </div>
-          <Button variant="ghost" size="icon" onClick={() => refetch()} aria-label="Atualizar" disabled={isFetching}>
-            <RefreshCw className={isFetching ? "size-4 animate-spin" : "size-4"} />
-          </Button>
-        </CardContent>
-      </Card>
+    <div className={isFetching ? "space-y-12 opacity-70 transition-opacity" : "space-y-12 transition-opacity"}>
+      <Section
+        title="Onde o retorno bate e onde não bate"
+        description="Concordância de cada recorte: quantos disseram que o retorno bateu com o que sentiram. Em lima, recortes com 30 respostas ou mais e concordância abaixo de 55%."
+      >
+        <div className="grid gap-4 lg:grid-cols-2">
+          <AgreementTable
+            title="Por aspecto"
+            description="Curtiu ou não nos cartões de destaque e melhoria."
+            cells={data.byAspect}
+            label={(k) => ASPECT_LABEL[k] ?? k}
+          />
+          <AgreementTable
+            title="Textos da IA"
+            description="Resumo e dica do topo do resultado."
+            cells={data.byLlmText}
+            label={(k) => ASPECT_LABEL[k] ?? k}
+          />
+          <AgreementTable
+            title="Por versão do prompt"
+            description="Pergunta global, pela versão que escreveu o texto."
+            cells={data.byPromptVersion}
+            label={(k) => k}
+          />
+          <AgreementTable
+            title="Por versão do catálogo de frases"
+            description="Pergunta global, pela versão das frases da tela."
+            cells={data.byCopyVersion}
+            label={(k) => k}
+          />
+          <AgreementTable
+            title="Por motivo de perguntar"
+            description="Regra que decidiu mostrar a pergunta."
+            cells={data.byRule}
+            label={(k) => RULE_LABEL[k] ?? k}
+          />
+          <Card className="shadow-none">
+            <CardHeader>
+              <CardTitle className="text-base">Motivos mais citados</CardTitle>
+              <CardDescription>Marcados pela pessoa; “(IA)” veio da leitura do comentário.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {data.topReasons.length === 0 ? (
+                <p className="text-muted-foreground text-sm">Nenhum motivo no período.</p>
+              ) : (
+                <ul className="space-y-1.5 text-sm">
+                  {data.topReasons.map((r) => (
+                    <li key={r.reason} className="flex justify-between gap-4">
+                      <span>{reasonLabel(r.reason)}</span>
+                      <span className="tabular-nums text-muted-foreground">{r.n}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </Section>
 
-      {data.alerts.length > 0 && (
-        <Card className="border-amber-300 dark:border-amber-800">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <AlertTriangle className="size-4 text-amber-600" />
-              Pontos de atenção
-            </CardTitle>
-            <CardDescription>
-              Recortes com pelo menos 30 respostas e concordância abaixo de 55%, ou queda de 15 pontos na última semana.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 text-sm">
-              {data.alerts.map((a) => (
-                <li key={`${a.kind}:${a.scope}:${a.key}`}>{alertSentence(a)}</li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="grid gap-6 lg:grid-cols-2">
+      <Section title="Por frase exibida" description="Cada frase do catálogo (aspecto.faixa.variante) e cada texto avaliado, as 40 mais respondidas.">
         <AgreementTable
-          title="Por aspecto"
-          description="👍/👎 nos cartões de destaque e melhoria."
-          cells={data.byAspect}
-          label={(k) => ASPECT_LABEL[k] ?? k}
-        />
-        <AgreementTable
-          title="Textos da IA"
-          description="Resumo e dica do topo do resultado."
-          cells={data.byLlmText}
-          label={(k) => ASPECT_LABEL[k] ?? k}
-        />
-        <AgreementTable
-          title="Por versão do prompt"
-          description="Pergunta global, pela versão que escreveu o texto."
-          cells={data.byPromptVersion}
+          title="Frases e textos"
+          description="Concordância de cada frase mostrada no resultado."
+          cells={data.byPhrase.slice(0, 40)}
           label={(k) => k}
+          mono
         />
-        <AgreementTable
-          title="Por versão do catálogo de frases"
-          description="Pergunta global, pela versão das frases da tela."
-          cells={data.byCopyVersion}
-          label={(k) => k}
-        />
-        <AgreementTable
-          title="Por motivo de perguntar"
-          description="Regra que decidiu mostrar a pergunta."
-          cells={data.byRule}
-          label={(k) => RULE_LABEL[k] ?? k}
-        />
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Motivos mais citados</CardTitle>
-            <CardDescription>Marcados pela pessoa; “(IA)” veio da leitura do comentário.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {data.topReasons.length === 0 ? (
-              <p className="text-muted-foreground text-sm">Nenhum motivo no período.</p>
-            ) : (
-              <ul className="space-y-1.5 text-sm">
-                {data.topReasons.map((r) => (
-                  <li key={r.reason} className="flex justify-between gap-4">
-                    <span>{reasonLabel(r.reason)}</span>
-                    <span className="tabular-nums text-muted-foreground">{r.n}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      </Section>
 
-      <AgreementTable
-        title="Por frase exibida"
-        description="Cada frase do catálogo (aspecto.faixa.variante) e cada texto avaliado."
-        cells={data.byPhrase.slice(0, 40)}
-        label={(k) => k}
-        mono
-      />
+      <Section
+        title="O que os números dizem"
+        description="O período em frases. Os pontos de atenção (em lima) são recortes com pelo menos 30 respostas e concordância abaixo de 55%, ou queda de 15 pontos na última semana."
+      >
+        <InsightList items={insights} />
+      </Section>
     </div>
   );
 }
+
+/** Os totais da faixa: respostas, concordância, taxa de resposta, descartes e pontos de atenção. */
+function SummaryStats({ data }: { data: EvaluationSummary }) {
+  const g = data.funnel.global;
+  const answeredPeople = data.funnel.respondents;
+  return (
+    <HeroStats cols={5}>
+      <HeroStat
+        label="Respostas"
+        value={g.answered.toLocaleString("pt-BR")}
+        note={`de ${answeredPeople.toLocaleString("pt-BR")} ${answeredPeople === 1 ? "pessoa" : "pessoas"} em ${data.days} dias`}
+        help="Quantas vezes alguém respondeu à pergunta “bateu?” sobre o retorno da análise."
+      />
+      <HeroStat
+        label="Disseram que bateu"
+        value={pct(data.global.rate)}
+        note={data.global.n ? `${data.global.agree} sim · ${data.global.partial} em parte · ${data.global.disagree} não` : "Sem respostas no período"}
+        help="Concordância: a parte das respostas que disse que o retorno bateu com o que a pessoa sentiu."
+      />
+      <HeroStat
+        label="Respondida"
+        value={pct(g.shown ? g.answered / g.shown : null)}
+        note={`das ${g.shown.toLocaleString("pt-BR")} vezes que apareceu`}
+        help="Das vezes que a pergunta apareceu na tela, em quantas a pessoa respondeu."
+      />
+      <HeroStat
+        label="Descartada"
+        value={pct(g.shown ? g.dismissed / g.shown : null)}
+        note={`${g.dismissed.toLocaleString("pt-BR")} “Agora não”`}
+        help="Das vezes que a pergunta apareceu, em quantas a pessoa tocou em “Agora não”."
+      />
+      <HeroStat
+        label="Pontos de atenção"
+        value={data.alerts.length}
+        note={data.alerts.length ? "recortes para revisar" : "Nada fora do normal"}
+        help="Recortes com pelo menos 30 respostas e concordância abaixo de 55%, ou queda de 15 pontos na última semana."
+      />
+    </HeroStats>
+  );
+}
+
 
 function AgreementTable({
   title,
@@ -287,7 +343,7 @@ function AgreementTable({
   mono?: boolean;
 }) {
   return (
-    <Card>
+    <Card className="min-w-0 shadow-none">
       <CardHeader>
         <CardTitle className="text-base">{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
@@ -316,7 +372,7 @@ function AgreementTable({
                   <TableCell className="text-right tabular-nums">{c.partial}</TableCell>
                   <TableCell className="text-right tabular-nums">{c.disagree}</TableCell>
                   <TableCell className="text-right tabular-nums font-medium">
-                    <span className={c.rate != null && c.n >= 30 && c.rate < 0.55 ? "text-amber-600" : undefined}>
+                    <span className={c.rate != null && c.n >= 30 && c.rate < 0.55 ? "text-lime-ink font-semibold" : undefined}>
                       {pct(c.rate)}
                     </span>
                   </TableCell>

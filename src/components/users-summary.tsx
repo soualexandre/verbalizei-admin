@@ -3,14 +3,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { UsersSummary as Summary } from "@/lib/types";
-import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { HeroStat, HeroStats } from "@/components/page-hero";
 import { fmt, fmtPct } from "@/components/dashboard/format";
 
 /**
- * Totalizadores da tela de Usuários (25/10/2026, pedido do usuário: bem
- * resumidos e pequenos). Seis números numa faixa, cada um com uma linha curta.
- * Falhou ao carregar: a faixa some, a lista segue.
+ * Totalizadores da tela de Usuários, dentro da faixa azul (PageHero), no
+ * padrão do admin desde 25/10/2026. Seis números, cada um com uma linha curta
+ * e o que quer dizer ao passar o mouse. Falhou ao carregar: os totais somem,
+ * a lista segue.
  */
 export function UsersSummary() {
   const { data, isLoading, isError } = useQuery({
@@ -22,21 +22,46 @@ export function UsersSummary() {
   if (isError) return null;
   if (isLoading || !data) {
     return (
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6" aria-busy="true" aria-label="Carregando os totais">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6" aria-busy="true" aria-label="Carregando os totais">
         {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} className="h-[74px] rounded-xl" />
+          <div key={i} className="h-[108px] animate-pulse rounded-2xl bg-white/12" />
         ))}
       </div>
     );
   }
 
   const share = (n: number) => (data.total ? fmtPct(Math.round((n / data.total) * 100)) : "—");
-  const items: Array<{ label: string; value: number; note: string; help?: string }> = [
-    { label: "Cadastrados", value: data.total, note: "pessoas reais" },
-    { label: "Novos (7 dias)", value: data.new7d, note: `${fmt(data.new30d)} em 30 dias` },
-    { label: "Treinaram (7 dias)", value: data.active7d, note: `${share(data.active7d)} da base` },
-    { label: "Pagantes", value: data.paying, note: `${share(data.paying)} · Starter e Ouro` },
-    { label: "Fizeram o onboarding", value: data.onboarded, note: `${share(data.onboarded)} da base` },
+  const items: Array<{ label: string; value: number; note: string; help: string }> = [
+    {
+      label: "Cadastrados",
+      value: data.total,
+      note: "pessoas reais",
+      help: "Todas as contas, sem usuários de teste e administradores.",
+    },
+    {
+      label: "Novos (7 dias)",
+      value: data.new7d,
+      note: `${fmt(data.new30d)} em 30 dias`,
+      help: "Contas criadas nos últimos 7 dias; embaixo, nos últimos 30.",
+    },
+    {
+      label: "Treinaram (7 dias)",
+      value: data.active7d,
+      note: `${share(data.active7d)} da base`,
+      help: "Pessoas que treinaram ao menos uma vez nos últimos 7 dias (cenário, gravação, treino curto ou jogo).",
+    },
+    {
+      label: "Pagantes",
+      value: data.paying,
+      note: `${share(data.paying)} · Starter e Ouro`,
+      help: "Assinantes dos planos Starter e Ouro.",
+    },
+    {
+      label: "Fizeram o onboarding",
+      value: data.onboarded,
+      note: `${share(data.onboarded)} da base`,
+      help: "Responderam as perguntas de boas-vindas até o fim.",
+    },
     // Nenhuma interação: nem sala, treino curto, jogo, reconhecimento, roteiro ou cenário criado.
     ...(data.neverInteracted != null
       ? [{
@@ -46,21 +71,20 @@ export function UsersSummary() {
           help: "Nunca abriram uma sala nem fizeram treino curto, jogo, reconhecimento, gravação, lição, roteiro ou cenário próprio.",
         }]
       : data.neverTrained != null
-        ? [{ label: "Nunca treinaram", value: data.neverTrained, note: `${share(data.neverTrained)} da base` }]
+        ? [{
+            label: "Nunca treinaram",
+            value: data.neverTrained,
+            note: `${share(data.neverTrained)} da base`,
+            help: "Nunca fizeram um treino desde o cadastro.",
+          }]
         : []),
   ];
 
   return (
-    <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6" aria-label="Totais de usuários">
+    <HeroStats cols={items.length >= 6 ? 6 : 5}>
       {items.map((it) => (
-        <li key={it.label}>
-          <Card className="gap-0.5 rounded-xl px-3.5 py-3 shadow-none" title={it.help}>
-            <p className="text-muted-foreground truncate text-xs font-medium">{it.label}</p>
-            <p className="text-xl font-semibold leading-tight tracking-tight tabular-nums">{fmt(it.value)}</p>
-            <p className="text-muted-foreground truncate text-[11px] tabular-nums">{it.note}</p>
-          </Card>
-        </li>
+        <HeroStat key={it.label} label={it.label} value={fmt(it.value)} note={it.note} help={it.help} />
       ))}
-    </ul>
+    </HeroStats>
   );
 }

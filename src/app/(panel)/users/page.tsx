@@ -22,7 +22,7 @@ import type {
 } from "@/lib/types";
 import { USER_SEGMENTS } from "@/lib/types";
 import { formatDate, initials } from "@/lib/utils";
-import { PageHeader } from "@/components/page-header";
+import { PageHero, Section } from "@/components/page-hero";
 import { UsersSummary } from "@/components/users-summary";
 import { PaginationBar } from "@/components/pagination-bar";
 import {
@@ -111,186 +111,192 @@ export default function UsersPage() {
 
   return (
     <>
-      <PageHeader
+      <PageHero
         title="Usuários"
-        description="Gerencie planos, papéis e status. Usuários de teste não aparecem."
-      />
+        description="Quem está na base e o que fez no app. Gerencie planos, papéis e status; usuários de teste não aparecem."
+      >
+        <UsersSummary />
+      </PageHero>
 
-      <UsersSummary />
+      <Section
+        title="Todos os usuários"
+        description={data ? `${data.meta.total.toLocaleString("pt-BR")} encontrados com os filtros atuais. Abra o menu de cada linha para ver detalhes, editar ou excluir.` : "Busque por nome ou e-mail e filtre por plano, papel ou segmento."}
+      >
+        <Card className="shadow-none">
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <form onSubmit={applySearch} className="relative flex-1 min-w-56">
+                <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                <Input
+                  placeholder="Buscar por nome ou e-mail…"
+                  aria-label="Buscar por nome ou e-mail"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  className="pl-9"
+                />
+              </form>
 
-      <Card>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <form onSubmit={applySearch} className="relative flex-1 min-w-56">
-              <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-              <Input
-                placeholder="Buscar por nome ou e-mail…"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="pl-9"
-              />
-            </form>
+              <Select value={plan} onValueChange={(v) => resetPageAnd(() => setPlan(v))}>
+                <SelectTrigger className="w-36" aria-label="Plano">
+                  <SelectValue placeholder="Plano" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>Todos os planos</SelectItem>
+                  <SelectItem value="FREE">FREE</SelectItem>
+                  <SelectItem value="STARTER">STARTER</SelectItem>
+                  <SelectItem value="PREMIUM">PREMIUM</SelectItem>
+                </SelectContent>
+              </Select>
 
-            <Select value={plan} onValueChange={(v) => resetPageAnd(() => setPlan(v))}>
-              <SelectTrigger className="w-36">
-                <SelectValue placeholder="Plano" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>Todos os planos</SelectItem>
-                <SelectItem value="FREE">FREE</SelectItem>
-                <SelectItem value="STARTER">STARTER</SelectItem>
-                <SelectItem value="PREMIUM">PREMIUM</SelectItem>
-              </SelectContent>
-            </Select>
+              <Select value={role} onValueChange={(v) => resetPageAnd(() => setRole(v))}>
+                <SelectTrigger className="w-36" aria-label="Papel">
+                  <SelectValue placeholder="Papel" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>Todos os papéis</SelectItem>
+                  <SelectItem value="USER">USER</SelectItem>
+                  <SelectItem value="ADMIN">ADMIN</SelectItem>
+                </SelectContent>
+              </Select>
 
-            <Select value={role} onValueChange={(v) => resetPageAnd(() => setRole(v))}>
-              <SelectTrigger className="w-36">
-                <SelectValue placeholder="Papel" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>Todos os papéis</SelectItem>
-                <SelectItem value="USER">USER</SelectItem>
-                <SelectItem value="ADMIN">ADMIN</SelectItem>
-              </SelectContent>
-            </Select>
+              <Select
+                value={segment}
+                onValueChange={(v) => resetPageAnd(() => setSegment(v))}
+              >
+                <SelectTrigger className="w-auto min-w-44" aria-label="Segmento">
+                  <SelectValue placeholder="Segmento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>Todos os segmentos</SelectItem>
+                  {USER_SEGMENTS.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-            <Select
-              value={segment}
-              onValueChange={(v) => resetPageAnd(() => setSegment(v))}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Segmento" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>Todos os segmentos</SelectItem>
-                {USER_SEGMENTS.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {s}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Usuário</TableHead>
-                <TableHead>Plano</TableHead>
-                <TableHead>Papel</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead title="Cenários + gravações (inclui o 1º reconhecimento) + micro-treinos + jogos">
-                  Interações
-                </TableHead>
-                <TableHead>XP</TableHead>
-                <TableHead>Streak</TableHead>
-                <TableHead>Criado</TableHead>
-                <TableHead className="w-10" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 8 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell colSpan={9}>
-                      <Skeleton className="h-8 w-full" />
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : !data?.data.length ? (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell
-                    colSpan={9}
-                    className="text-muted-foreground py-10 text-center"
-                  >
-                    Nenhum usuário encontrado.
-                  </TableCell>
+                  <TableHead>Usuário</TableHead>
+                  <TableHead>Plano</TableHead>
+                  <TableHead>Papel</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead title="Cenários + gravações (inclui o 1º reconhecimento) + micro-treinos + jogos">
+                    Interações
+                  </TableHead>
+                  <TableHead>XP</TableHead>
+                  <TableHead>Streak</TableHead>
+                  <TableHead>Criado</TableHead>
+                  <TableHead className="w-10" />
                 </TableRow>
-              ) : (
-                data.data.map((u) => (
-                  <TableRow key={u.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="size-8">
-                          {u.avatarUrl && <AvatarImage src={u.avatarUrl} alt="" />}
-                          <AvatarFallback>
-                            {initials(u.name, u.email)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="leading-tight">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">
-                              {u.name || "—"}
-                            </span>
-                            <MeetingsBetaBadge enabled={!!u.meetingsBeta} />
-                          </div>
-                          <p className="text-muted-foreground text-xs">
-                            {u.email}
-                          </p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <PlanBadge plan={u.plan} />
-                    </TableCell>
-                    <TableCell>
-                      <RoleBadge role={u.role} />
-                    </TableCell>
-                    <TableCell>
-                      <ActiveBadge active={u.isActive} />
-                    </TableCell>
-                    <TableCell>
-                      <InteractionsCell value={u.interactions} />
-                    </TableCell>
-                    <TableCell>{u.totalPoints}</TableCell>
-                    <TableCell>{u.progress?.streak ?? 0}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatDate(u.createdAt)}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="size-8">
-                            <MoreHorizontal className="size-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link href={`/users/${u.id}`}>
-                              <Eye className="size-4" />
-                              Ver detalhes
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => setEditing(u)}>
-                            <Pencil className="size-4" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            variant="destructive"
-                            onSelect={() => setDeleting(u)}
-                          >
-                            <Trash2 className="size-4" />
-                            Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 8 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell colSpan={9}>
+                        <Skeleton className="h-8 w-full" />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : !data?.data.length ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={9}
+                      className="text-muted-foreground py-10 text-center"
+                    >
+                      Nenhum usuário encontrado.
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  data.data.map((u) => (
+                    <TableRow key={u.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="size-8">
+                            {u.avatarUrl && <AvatarImage src={u.avatarUrl} alt="" />}
+                            <AvatarFallback>
+                              {initials(u.name, u.email)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="leading-tight">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">
+                                {u.name || "—"}
+                              </span>
+                              <MeetingsBetaBadge enabled={!!u.meetingsBeta} />
+                            </div>
+                            <p className="text-muted-foreground text-xs">
+                              {u.email}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <PlanBadge plan={u.plan} />
+                      </TableCell>
+                      <TableCell>
+                        <RoleBadge role={u.role} />
+                      </TableCell>
+                      <TableCell>
+                        <ActiveBadge active={u.isActive} />
+                      </TableCell>
+                      <TableCell>
+                        <InteractionsCell value={u.interactions} />
+                      </TableCell>
+                      <TableCell className="tabular-nums">{u.totalPoints ?? <span className="text-muted-foreground">—</span>}</TableCell>
+                      <TableCell>{u.progress?.streak ?? 0}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatDate(u.createdAt)}
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="size-8" aria-label={`Ações para ${u.name || u.email}`}>
+                              <MoreHorizontal className="size-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link href={`/users/${u.id}`}>
+                                <Eye className="size-4" />
+                                Ver detalhes
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => setEditing(u)}>
+                              <Pencil className="size-4" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onSelect={() => setDeleting(u)}
+                            >
+                              <Trash2 className="size-4" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
 
-          {data && (
-            <PaginationBar
-              page={data.meta.page}
-              totalPages={data.meta.totalPages}
-              total={data.meta.total}
-              onPageChange={setPage}
-            />
-          )}
-        </CardContent>
-      </Card>
+            {data && (
+              <PaginationBar
+                page={data.meta.page}
+                totalPages={data.meta.totalPages}
+                total={data.meta.total}
+                onPageChange={setPage}
+              />
+            )}
+          </CardContent>
+        </Card>
+      </Section>
 
       {isFetching && !isLoading && (
         <div className="text-muted-foreground flex items-center gap-2 text-xs">
@@ -323,7 +329,8 @@ export default function UsersPage() {
 
 /** O total de interações e, embaixo, de onde ele vem (só o que não é zero). */
 function InteractionsCell({ value }: { value?: UserInteractions }) {
-  if (!value) return <span className="text-muted-foreground">—</span>;
+  // Sem dado (ou formato inesperado), o mesmo "—" das outras colunas.
+  if (!value || typeof value !== "object" || value.total == null) return <span className="text-muted-foreground">—</span>;
   const parts = [
     [value.scenarios, "cenários", "cen."],
     [value.recordings, "gravações (inclui o reconhecimento)", "grav."],

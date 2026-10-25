@@ -11,7 +11,8 @@ import type {
   EnrichmentSummary,
 } from "@/lib/types";
 import { formatDateTime, formatNumber } from "@/lib/utils";
-import { PageHeader } from "@/components/page-header";
+import { ErrorState } from "@/components/error-state";
+import { HeroStat, HeroStats, InsightList, PageHero, Section, type InsightTone } from "@/components/page-hero";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -79,113 +80,153 @@ export default function EnrichmentPage() {
 
   return (
     <>
-      <PageHeader
+      <PageHero
         title="Enriquecimento"
-        description='Perfil inferido de quem não fez o onboarding, respondeu "Outro" ou está sem segmento.'
+        description={
+          <>
+            Perfil inferido de quem não fez o onboarding, respondeu “Outro” ou está sem segmento.
+            {data && (
+              <>
+                {" "}
+                {data.lastEnrichedAt
+                  ? `Último enriquecimento em ${formatDateTime(data.lastEnrichedAt)}.`
+                  : "Ainda não foi enriquecido."}
+              </>
+            )}
+          </>
+        }
+        actions={
+          <>
+            {data && data.applicableHighConfidence > 0 && (
+              <Button variant="outline" onClick={() => setApplyOpen(true)} disabled={running}>
+                <CheckCheck className="size-4" />
+                Aplicar segmentos ({formatNumber(data.applicableHighConfidence)})
+              </Button>
+            )}
+            <Button
+              onClick={() => setRunOpen(true)}
+              disabled={running || !data}
+              className="text-brand-ink bg-white hover:bg-white/90"
+            >
+              {running ? <Loader2 className="size-4 animate-spin" /> : <WandSparkles className="size-4" />}
+              {running ? "Enriquecendo…" : "Enriquecer agora"}
+            </Button>
+          </>
+        }
       >
-        <div className="flex flex-wrap items-center gap-2">
-        {data && data.applicableHighConfidence > 0 && (
-          <Button variant="outline" onClick={() => setApplyOpen(true)} disabled={running}>
-            <CheckCheck className="size-4" />
-            Aplicar segmentos ({formatNumber(data.applicableHighConfidence)})
-          </Button>
-        )}
-        <Button onClick={() => setRunOpen(true)} disabled={running || !data}>
-          {running ? <Loader2 className="size-4 animate-spin" /> : <WandSparkles className="size-4" />}
-          {running ? "Enriquecendo…" : "Enriquecer agora"}
-        </Button>
-        </div>
-      </PageHeader>
-
-      {summary.isLoading || !data ? (
-        <div className="space-y-6">
-          <Skeleton className="h-36" />
-          <div className="grid gap-6 lg:grid-cols-3">
-            <Skeleton className="h-56" />
-            <Skeleton className="h-56" />
-            <Skeleton className="h-56" />
+        {data ? (
+          <HeroStats cols={5}>
+            <HeroStat
+              label="Sem perfil claro"
+              value={formatNumber(data.candidates)}
+              note={`${formatNumber(data.reasons.NO_ONBOARDING)} sem onboarding · ${formatNumber(data.reasons.FREE_TEXT)} “Outro”`}
+              help={`Pessoas que não fizeram o onboarding (${formatNumber(data.reasons.NO_ONBOARDING)}), responderam “Outro” (${formatNumber(data.reasons.FREE_TEXT)}) ou estão sem segmento (${formatNumber(data.reasons.NO_SEGMENT)}).`}
+            />
+            <HeroStat
+              label="Perfis identificados"
+              value={formatNumber(data.status.READY)}
+              note={data.candidates ? `${pct(data.status.READY, data.candidates)}% de quem não tem perfil claro` : "Ninguém para identificar"}
+              help="Pessoas que já tiveram o perfil (segmento, ocupação, setor) inferido."
+            />
+            <HeroStat
+              label="Sem sinal suficiente"
+              value={formatNumber(data.status.INSUFFICIENT_DATA)}
+              note="reavaliados quando usarem o app"
+              help="Pessoas que ainda não deram informação bastante para inferir o perfil."
+            />
+            <HeroStat
+              label="Aguardando"
+              value={formatNumber(data.status.NOT_PROCESSED)}
+              note="ainda não processados"
+              help="Pessoas que ainda não passaram pelo enriquecimento. A rotina diária das 4h processa os novos."
+            />
+            <HeroStat
+              label="Segmento aplicado"
+              value={formatNumber(data.applied)}
+              note={
+                data.applicableHighConfidence
+                  ? `${formatNumber(data.applicableHighConfidence)} prontos para aplicar`
+                  : "nenhum pendente com confiança alta"
+              }
+              help="Pessoas que já receberam o segmento inferido no perfil. “Prontos para aplicar” têm confiança de 75% ou mais."
+            />
+          </HeroStats>
+        ) : summary.isLoading ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5" aria-busy="true" aria-label="Carregando os totais">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-[108px] animate-pulse rounded-2xl bg-white/12" />
+            ))}
           </div>
+        ) : null}
+      </PageHero>
+
+      {summary.isError && !data ? (
+        <ErrorState title="Não foi possível carregar o enriquecimento." onRetry={() => summary.refetch()} />
+      ) : summary.isLoading || !data ? (
+        <div className="space-y-6" aria-busy="true" aria-label="Carregando o enriquecimento">
+          <div className="grid gap-4 lg:grid-cols-3">
+            <Skeleton className="h-56 rounded-card" />
+            <Skeleton className="h-56 rounded-card" />
+            <Skeleton className="h-56 rounded-card" />
+          </div>
+          <Skeleton className="h-80 rounded-card" />
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-12">
           {data.run.running && <RunProgress run={data.run} />}
 
-          <Card className="gap-4">
-            <CardContent className="space-y-3">
-              <h2 className="max-w-4xl text-2xl leading-tight font-semibold tracking-tight text-balance">
-                {headline(data)}
-              </h2>
-              <p className="max-w-3xl text-base leading-relaxed text-pretty">{support(data)}</p>
-              {!data.llmAvailable && (
-                <p className="text-sm text-amber-700 dark:text-amber-300">
-                  Nenhum provedor de IA está configurado na API. O enriquecimento vai usar só regras
-                  (onboarding, quiz da landing, trilhas e domínio do e-mail) e não vai interpretar
-                  textos livres.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          <dl className="text-muted-foreground flex flex-wrap gap-x-6 gap-y-1 px-1 text-sm">
-            <Fact value={data.reasons.NO_ONBOARDING} label="sem onboarding" />
-            <Fact value={data.reasons.FREE_TEXT} label="responderam “Outro”" />
-            <Fact value={data.reasons.NO_SEGMENT} label="sem segmento" />
-            <Fact value={data.status.NOT_PROCESSED} label="ainda não processados" />
-            <Fact value={data.applied} label="com segmento já aplicado" />
-            <div>
-              <dt className="sr-only">Última atualização</dt>
-              <dd>
-                {data.lastEnrichedAt
-                  ? `Último enriquecimento ${formatDateTime(data.lastEnrichedAt)}`
-                  : "Nunca enriquecido"}
-              </dd>
-            </div>
-          </dl>
-
           {data.status.READY > 0 && (
-            <div className="grid gap-6 lg:grid-cols-3">
-              <Card className="gap-4">
-                <CardHeader>
-                  <CardTitle>Segmentos inferidos</CardTitle>
-                  <CardDescription>Com a confiança média de cada um.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <RankedBars
-                    items={data.inferredSegments.map((s) => ({
-                      label: s.label,
-                      users: s.users,
-                      note: `${Math.round(s.avgConfidence * 100)}% conf.`,
-                    }))}
-                    empty="Nenhum segmento inferido ainda."
-                  />
-                </CardContent>
-              </Card>
-              <Card className="gap-4">
-                <CardHeader>
-                  <CardTitle>Ocupações mais comuns</CardTitle>
-                  <CardDescription>Profissão ou cargo provável.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <RankedBars items={data.topOccupations} empty="Sem ocupações identificadas." />
-                </CardContent>
-              </Card>
-              <Card className="gap-4">
-                <CardHeader>
-                  <CardTitle>Setores</CardTitle>
-                  <CardDescription>Área de atuação provável.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <RankedBars items={data.topIndustries} empty="Sem setores identificados." />
-                </CardContent>
-              </Card>
-            </div>
+            <Section title="Quem são" description="O perfil provável de quem já foi identificado.">
+              <div className="grid gap-4 lg:grid-cols-3">
+                <Card className="min-w-0 gap-4 shadow-none">
+                  <CardHeader>
+                    <CardTitle className="text-base">Segmentos inferidos</CardTitle>
+                    <CardDescription>Com a confiança média de cada um.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <RankedBars
+                      items={data.inferredSegments.map((s) => ({
+                        label: s.label,
+                        users: s.users,
+                        note: `${Math.round(s.avgConfidence * 100)}% conf.`,
+                      }))}
+                      empty="Nenhum segmento inferido ainda."
+                    />
+                  </CardContent>
+                </Card>
+                <Card className="min-w-0 gap-4 shadow-none">
+                  <CardHeader>
+                    <CardTitle className="text-base">Ocupações mais comuns</CardTitle>
+                    <CardDescription>Profissão ou cargo provável.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <RankedBars items={data.topOccupations} empty="Sem ocupações identificadas." />
+                  </CardContent>
+                </Card>
+                <Card className="min-w-0 gap-4 shadow-none">
+                  <CardHeader>
+                    <CardTitle className="text-base">Setores</CardTitle>
+                    <CardDescription>Área de atuação provável.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <RankedBars items={data.topIndustries} empty="Sem setores identificados." />
+                  </CardContent>
+                </Card>
+              </div>
+            </Section>
           )}
 
-          <EnrichmentTable
-            segments={data.inferredSegments}
-            disabled={running}
-            onChanged={() => qc.invalidateQueries({ queryKey: ["enrichment-summary"] })}
-          />
+          <Section title="Pessoas" description="Cada pessoa sem perfil claro e o que foi inferido sobre ela. Clique numa linha para ver os sinais usados.">
+            <EnrichmentTable
+              segments={data.inferredSegments}
+              disabled={running}
+              onChanged={() => qc.invalidateQueries({ queryKey: ["enrichment-summary"] })}
+            />
+          </Section>
+
+          <Section title="O que os números dizem" description="O enriquecimento em frases.">
+            <InsightList items={insights(data)} />
+          </Section>
         </div>
       )}
 
@@ -251,16 +292,26 @@ function support(data: EnrichmentSummary) {
   return parts.join(" ");
 }
 
-function Fact({ value, label }: { value: number; label: string }) {
-  return (
-    <div>
-      <dt className="sr-only">{label}</dt>
-      <dd>
-        <span className="text-foreground font-semibold tabular-nums">{formatNumber(value)}</span>{" "}
-        {label}
-      </dd>
-    </div>
-  );
+/** As frases do fim da tela: a manchete, o apoio e o aviso de IA indisponível. */
+function insights(data: EnrichmentSummary): Array<{ text: string; tone: InsightTone }> {
+  const items: Array<{ text: string; tone: InsightTone }> = [
+    { text: headline(data), tone: data.candidates === 0 ? "green" : "brand" },
+  ];
+  const rest = support(data);
+  if (rest) items.push({ text: rest, tone: "brand" });
+  if (data.applicableHighConfidence > 0) {
+    items.push({
+      text: `${formatNumber(data.applicableHighConfidence)} ${data.applicableHighConfidence === 1 ? "pessoa tem" : "pessoas têm"} segmento inferido com confiança alta (75% ou mais) e ainda não ${data.applicableHighConfidence === 1 ? "recebeu" : "receberam"}; use “Aplicar segmentos” no topo.`,
+      tone: "lime",
+    });
+  }
+  if (!data.llmAvailable) {
+    items.push({
+      text: "Nenhum provedor de IA está configurado na API. O enriquecimento vai usar só regras (onboarding, quiz da landing, trilhas e domínio do e-mail) e não vai interpretar textos livres.",
+      tone: "lime",
+    });
+  }
+  return items;
 }
 
 function RankedBars({
