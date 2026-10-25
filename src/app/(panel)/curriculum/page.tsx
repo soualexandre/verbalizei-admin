@@ -12,7 +12,7 @@ import {
 import { api } from "@/lib/api";
 import type { Challenge, SkillGapRef } from "@/lib/types";
 import { ErrorState } from "@/components/error-state";
-import { HeroStat, HeroStats, InsightList, PageHero, Section, type InsightTone } from "@/components/page-hero";
+import { HeroStat, HeroStats, InsightList, PageHero, Section, type InsightTone, HeroStatsSkeleton } from "@/components/page-hero";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -127,11 +127,7 @@ export default function MicroTrainingsPage() {
             />
           </HeroStats>
         ) : isLoading ? (
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-busy="true" aria-label="Carregando os totais">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-[108px] animate-pulse rounded-2xl bg-white/12" />
-            ))}
-          </div>
+          <HeroStatsSkeleton count={4} />
         ) : null}
       </PageHero>
 

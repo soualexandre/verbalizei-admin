@@ -13,9 +13,9 @@ export function PaginationBar({
   onPageChange: (page: number) => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4">
-      <p className="text-muted-foreground text-sm">
-        Página {page} de {Math.max(1, totalPages)} · {total} registros
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+      <p className="text-muted-foreground text-sm tabular-nums">
+        Página <span className="text-foreground font-semibold">{page}</span> de {Math.max(1, totalPages)} · {total.toLocaleString("pt-BR")} registros
       </p>
       <div className="flex items-center gap-2">
         <Button

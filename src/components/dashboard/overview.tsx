@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { DashboardOverview, LatencyStats, ReturnRate } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { HeroStat, HeroStats, InsightList, Section, type InsightTone } from "@/components/page-hero";
-import { ActiveUsersChart, HourlyChart, InteractionsChart, KindLegend, WeekHourHeatmap, WeekdayChart } from "./charts";
+import { ActiveUsersChart, HourlyChart, InteractionsChart, KindDonut, KindLegend, WeekHourHeatmap, WeekdayChart } from "./charts";
 import { CohortTable } from "./cohort-table";
 import { DayActivityDialog } from "./day-activity-dialog";
 import { fmt, fmtPct, pointsTrend, relativeTrend, shortDay } from "./format";
@@ -139,10 +139,11 @@ export function Overview({ data }: { data: DashboardOverview }) {
       )}
 
       <Section title="Quem treinou, dia a dia" description="Clique num dia para ver quem treinou e em quê.">
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card className={CHART_CARD}>
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Card className={`${CHART_CARD} lg:col-span-2`}>
             <CardHeader>
               <CardTitle className="text-base">Pessoas que treinaram por dia</CardTitle>
+              <CardDescription className="text-foreground/80 tabular-nums">{peakDaySentence(data.daily)}</CardDescription>
             </CardHeader>
             <CardContent>
               <ActiveUsersChart daily={data.daily} onSelectDay={setSelectedDay} />
@@ -150,6 +151,15 @@ export function Overview({ data }: { data: DashboardOverview }) {
             </CardContent>
           </Card>
           <Card className={CHART_CARD}>
+            <CardHeader>
+              <CardTitle className="text-base">O que treinam</CardTitle>
+              <CardDescription>A fatia de cada tipo no período.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <KindDonut byKind={kpis.interactions.byKind} />
+            </CardContent>
+          </Card>
+          <Card className={`${CHART_CARD} lg:col-span-3`}>
             <CardHeader>
               <CardTitle className="text-base">Treinos por dia, por tipo</CardTitle>
               <KindLegend byKind={kpis.interactions.byKind} users={kpis.activeUsers.value} />
@@ -180,9 +190,7 @@ export function Overview({ data }: { data: DashboardOverview }) {
 
       <Section title="O que os números dizem" description="O período em frases e os cenários mais treinados.">
         <div className="grid gap-4 lg:grid-cols-2">
-          <Card className="gap-4 px-6 py-6 shadow-none">
-            <InsightList columns={1} items={summary.map((text, i) => ({ text, tone: tones[i] ?? "brand" }))} />
-          </Card>
+          <InsightList columns={1} items={summary.map((text, i) => ({ text, tone: tones[i] ?? "brand" }))} />
           <Card className={CHART_CARD}>
             <CardHeader>
               <CardTitle className="text-base">Cenários mais treinados</CardTitle>
@@ -197,7 +205,7 @@ export function Overview({ data }: { data: DashboardOverview }) {
                 <ol className="divide-y">
                   {data.topScenarios.map((s, i) => (
                     <li key={s.id} className="flex items-center gap-3 py-2.5 text-sm">
-                      <span className="bg-brand-50 text-brand-ink flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums">{i + 1}</span>
+                      <span className="bg-green-100 text-primary flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums">{i + 1}</span>
                       <span className="min-w-0 flex-1 truncate" title={s.title}>
                         {s.title}
                       </span>
@@ -228,6 +236,15 @@ export function Overview({ data }: { data: DashboardOverview }) {
       )}
     </div>
   );
+}
+
+/** "O dia mais cheio foi 30/09, com 13 pessoas; em média, 8 por dia." */
+function peakDaySentence(daily: DashboardOverview["daily"]): string {
+  if (!daily.length) return "Nenhum dia no período.";
+  const peak = daily.reduce((a, b) => (b.activeUsers > a.activeUsers ? b : a));
+  if (!peak.activeUsers) return "Ninguém treinou no período.";
+  const avg = daily.reduce((sum, d) => sum + d.activeUsers, 0) / daily.length;
+  return `O dia mais cheio foi ${shortDay(peak.day)}, com ${fmt(peak.activeUsers)} ${peak.activeUsers === 1 ? "pessoa" : "pessoas"}; em média, ${avg.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} por dia.`;
 }
 
 /** A volta depois do treino curto, na faixa, com a variação em pontos percentuais. */

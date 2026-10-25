@@ -16,6 +16,8 @@ export function RoleBadge({ role }: { role: UserRole }) {
 export function ActiveBadge({ active }: { active: boolean }) {
   return (
     <Badge variant={active ? "success" : "destructive"}>
+      {/* Status com bolinha, como nas tabelas da referência (25/10/2026). */}
+      <span aria-hidden className="size-1.5 rounded-full bg-current" />
       {active ? "Ativo" : "Inativo"}
     </Badge>
   );

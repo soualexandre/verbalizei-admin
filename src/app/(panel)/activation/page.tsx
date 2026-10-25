@@ -239,7 +239,7 @@ function Report({ data }: { data: ActivationReport }) {
                 {gaps.map((g, i) => (
                   <li key={g.to} className="flex gap-3">
                     <span
-                      className="bg-brand-50 text-brand-ink flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums"
+                      className="bg-green-100 text-primary flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums"
                       aria-label={`${i + 1}ª maior perda`}
                     >
                       {i + 1}
@@ -266,9 +266,7 @@ function Report({ data }: { data: ActivationReport }) {
 
       <Section title="O que os números dizem" description="Os sinais sobre os bloqueios e o que fazer com quem ainda não falou.">
         {data.signals.length > 0 && (
-          <Card className="gap-4 px-6 py-6 shadow-none">
-            <InsightList items={data.signals.map((text) => ({ text, tone: "brand" as const }))} />
-          </Card>
+          <InsightList items={data.signals.map((text) => ({ text, tone: "brand" as const }))} />
         )}
         <div className="grid gap-4 lg:grid-cols-2">
           <Card className="min-w-0 gap-4 shadow-none">

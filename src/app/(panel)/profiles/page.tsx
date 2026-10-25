@@ -111,9 +111,9 @@ export default function ProfilesPage() {
                 id="profiles-inferred"
                 checked={includeInferred}
                 onCheckedChange={setIncludeInferred}
-                className="data-[state=checked]:bg-lime data-[state=unchecked]:bg-white/30 focus-visible:ring-white/60"
+                className="data-[state=checked]:bg-primary"
               />
-              <Label htmlFor="profiles-inferred" className="text-white">
+              <Label htmlFor="profiles-inferred">
                 Incluir perfis inferidos
               </Label>
             </div>

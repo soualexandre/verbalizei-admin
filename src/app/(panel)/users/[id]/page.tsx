@@ -297,9 +297,7 @@ function UserInsights({ detail }: { detail: UserDetail }) {
 
   return (
     <Section title="O que os números dizem" description="O que a pessoa mais treina e o que se repete nas análises dela.">
-      <Card className="gap-4 px-6 py-6 shadow-none">
-        <InsightList items={items} />
-      </Card>
+      <InsightList items={items} />
     </Section>
   );
 }

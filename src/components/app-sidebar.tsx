@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Barbell,
+  List,
+  X,
   CaretDown,
   Funnel,
   ChatCircleText,
@@ -68,11 +70,64 @@ const COLLAPSED_KEY = "vb_admin_nav_collapsed";
 const isActive = (pathname: string, href: string) => pathname === href || pathname.startsWith(href + "/");
 
 /**
- * Barra lateral: a marca no topo, os grupos (cada um abre e fecha; o da tela
- * atual fica sempre aberto) e a conta no pé. No ativo, o ícone cheio em azul
- * sobre a pílula azul clara, como no web.
+ * Barra lateral no tom do fundo, sem cartão: a marca no topo, os grupos (cada
+ * um abre e fecha; o da tela atual fica sempre aberto) e a conta no pé. O
+ * ativo é uma pílula branca com o ícone cheio em verde. No celular, a mesma
+ * navegação numa gaveta aberta pela barra do topo.
  */
 export function AppSidebar() {
+  const pathname = usePathname();
+  const [drawer, setDrawer] = useState(false);
+  // Trocou de tela pela gaveta: fecha.
+  useEffect(() => setDrawer(false), [pathname]);
+  useEffect(() => {
+    if (!drawer) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setDrawer(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [drawer]);
+
+  return (
+    <>
+      <aside className="bg-sidebar text-sidebar-foreground border-sidebar-border sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r md:flex">
+        <NavContent />
+      </aside>
+
+      <header className="bg-background/90 sticky top-0 z-30 flex h-14 items-center justify-between border-b px-4 backdrop-blur md:hidden">
+        <Link href="/dashboard" aria-label="Ir para a visão geral">
+          <BrandLogo priority />
+        </Link>
+        <button
+          type="button"
+          onClick={() => setDrawer(true)}
+          aria-label="Abrir o menu"
+          aria-expanded={drawer}
+          className="hover:bg-card flex size-10 items-center justify-center rounded-xl"
+        >
+          <List className="size-6" aria-hidden />
+        </button>
+      </header>
+      {drawer && (
+        <div className="fixed inset-0 z-40 md:hidden" role="dialog" aria-modal="true" aria-label="Menu">
+          <button type="button" aria-label="Fechar o menu" onClick={() => setDrawer(false)} className="absolute inset-0 bg-black/30" />
+          <div className="bg-sidebar animate-in slide-in-from-left absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col shadow-xl duration-200">
+            <button
+              type="button"
+              onClick={() => setDrawer(false)}
+              aria-label="Fechar o menu"
+              className="hover:bg-card absolute top-4 right-3 flex size-10 items-center justify-center rounded-xl"
+            >
+              <X className="size-5" aria-hidden />
+            </button>
+            <NavContent />
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function NavContent() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   // Grupos fechados à mão (guardado no navegador; falhar ao ler = tudo aberto).
@@ -98,15 +153,15 @@ export function AppSidebar() {
   };
 
   return (
-    <aside className="bg-sidebar text-sidebar-foreground border-sidebar-border sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r md:flex">
-      <div className="shrink-0 px-6 pt-3">
+    <>
+      <div className="shrink-0 px-5 pt-4">
         <Link href="/dashboard" className="flex h-14 w-fit items-center" aria-label="Ir para a visão geral">
-          <BrandLogo priority />
+          <BrandLogo />
         </Link>
       </div>
 
       <nav aria-label="Navegação do admin" className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pt-4 pb-4">
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-5">
           {GROUPS.map((group) => {
             const hasActive = group.items.some((i) => isActive(pathname, i.href));
             const open = hasActive || !collapsed.includes(group.key);
@@ -128,7 +183,7 @@ export function AppSidebar() {
                 >
                   <span className="flex items-center gap-2">
                     {group.label}
-                    {!open && <span className="bg-muted rounded-full px-1.5 text-[10px] tabular-nums">{group.items.length}</span>}
+                    {!open && <span className="bg-card rounded-full px-1.5 text-[10px] tabular-nums">{group.items.length}</span>}
                   </span>
                   {!hasActive && (
                     <CaretDown
@@ -139,7 +194,7 @@ export function AppSidebar() {
                   )}
                 </button>
                 {open && (
-                  <ul id={listId} className="mt-1 flex flex-col gap-0.5">
+                  <ul id={listId} className="mt-1 flex flex-col gap-1">
                     {group.items.map((item) => (
                       <li key={item.href}>
                         <NavLink {...item} active={isActive(pathname, item.href)} />
@@ -153,11 +208,10 @@ export function AppSidebar() {
         </div>
 
         <div className="mt-auto pt-4">
-          <div className="bg-sidebar-border mx-3 mb-3 h-px" aria-hidden />
-          <div className="flex items-center gap-3 px-3 py-2">
-            <Avatar className="size-8">
+          <div className="bg-card flex items-center gap-3 rounded-2xl border px-3 py-2.5">
+            <Avatar className="size-9">
               {user?.avatarUrl && <AvatarImage src={user.avatarUrl} alt="" />}
-              <AvatarFallback className="bg-brand-50 text-brand-ink font-semibold">{initials(user?.name, user?.email)}</AvatarFallback>
+              <AvatarFallback className="bg-green-100 text-primary font-semibold">{initials(user?.name, user?.email)}</AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1 leading-tight">
               <p className="truncate text-sm font-semibold">{user?.name || "Admin"}</p>
@@ -167,14 +221,14 @@ export function AppSidebar() {
           <button
             type="button"
             onClick={logout}
-            className="text-muted-foreground hover:text-foreground flex h-11 w-full items-center gap-3 rounded-xl px-3 text-[15px] font-medium transition-colors hover:bg-black/[0.04]"
+            className="text-muted-foreground hover:text-foreground hover:bg-card/70 mt-1 flex h-11 w-full items-center gap-3 rounded-xl px-3 text-[15px] font-medium transition-colors"
           >
             <SignOut className="size-[22px]" aria-hidden />
             Sair
           </button>
         </div>
       </nav>
-    </aside>
+    </>
   );
 }
 
@@ -188,8 +242,8 @@ function NavLink({ href, label, icon: Icon, active }: { href: string; label: str
         "transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.98]",
         "focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2",
         active
-          ? "bg-accent text-foreground font-semibold"
-          : "text-muted-foreground hover:text-foreground font-medium hover:bg-black/[0.04]",
+          ? "bg-card text-foreground font-semibold shadow-[0_1px_2px_rgb(23_33_15/0.06),0_4px_12px_-6px_rgb(23_33_15/0.12)]"
+          : "text-muted-foreground hover:text-foreground hover:bg-card/70 font-medium",
       )}
     >
       <Icon

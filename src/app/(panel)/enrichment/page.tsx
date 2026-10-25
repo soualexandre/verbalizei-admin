@@ -12,7 +12,7 @@ import type {
 } from "@/lib/types";
 import { formatDateTime, formatNumber } from "@/lib/utils";
 import { ErrorState } from "@/components/error-state";
-import { HeroStat, HeroStats, InsightList, PageHero, Section, type InsightTone } from "@/components/page-hero";
+import { HeroStat, HeroStats, InsightList, PageHero, Section, type InsightTone, HeroStatsSkeleton } from "@/components/page-hero";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -106,7 +106,6 @@ export default function EnrichmentPage() {
             <Button
               onClick={() => setRunOpen(true)}
               disabled={running || !data}
-              className="text-brand-ink bg-white hover:bg-white/90"
             >
               {running ? <Loader2 className="size-4 animate-spin" /> : <WandSparkles className="size-4" />}
               {running ? "Enriquecendo…" : "Enriquecer agora"}
@@ -152,11 +151,7 @@ export default function EnrichmentPage() {
             />
           </HeroStats>
         ) : summary.isLoading ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5" aria-busy="true" aria-label="Carregando os totais">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-[108px] animate-pulse rounded-2xl bg-white/12" />
-            ))}
-          </div>
+          <HeroStatsSkeleton count={5} />
         ) : null}
       </PageHero>
 

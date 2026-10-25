@@ -9,6 +9,8 @@ import {
   Cell,
   ComposedChart,
   Line,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -348,6 +350,98 @@ export function WeekHourHeatmap({ heatmap }: { heatmap: number[][] }) {
           Mais
         </span>
       </div>
+    </div>
+  );
+}
+
+type ByKind = DashboardOverview["kpis"]["interactions"]["byKind"];
+
+/**
+ * O que as pessoas treinam: rosca de fatias com ponta arredondada e um vão
+ * entre elas, a % em balões brancos sobre o anel e o total no centro
+ * (referência do usuário, 25/10/2026). A legenda embaixo repete nome, número
+ * e %, então a cor nunca é a única pista.
+ */
+export function KindDonut({ byKind }: { byKind: ByKind }) {
+  const total = KINDS.reduce((sum, k) => sum + byKind[k.key], 0);
+  const data = KINDS.map((k) => ({ ...k, value: byKind[k.key] })).filter((d) => d.value > 0);
+  const pct = (v: number) => (total ? Math.round((v / total) * 100) : 0);
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="relative h-[200px] w-full">
+        {total > 0 ? (
+          <ResponsiveContainer width="100%" height={200}>
+            <PieChart>
+              <defs>
+                <filter id="donut-bubble" x="-30%" y="-30%" width="160%" height="170%">
+                  <feDropShadow dx="0" dy="2" stdDeviation="2.5" floodColor="#17210f" floodOpacity="0.14" />
+                </filter>
+              </defs>
+              <Tooltip
+                content={({ active, payload }: TooltipProps<number, string>) => {
+                  if (!active || !payload?.length) return null;
+                  const d = payload[0].payload as (typeof data)[number];
+                  return <TooltipBox title={d.label} rows={[{ label: `${pct(d.value)}% dos treinos`, value: d.value, color: d.color }]} />;
+                }}
+              />
+              <Pie
+                data={data}
+                dataKey="value"
+                nameKey="label"
+                innerRadius="58%"
+                outerRadius="92%"
+                paddingAngle={data.length > 1 ? 3 : 0}
+                cornerRadius={10}
+                startAngle={90}
+                endAngle={-270}
+                stroke="none"
+                isAnimationActive={false}
+                labelLine={false}
+                label={({ cx, cy, midAngle, innerRadius, outerRadius, value }) => {
+                  const share = pct(Number(value));
+                  if (share < 6) return null;
+                  const r = (Number(innerRadius) + Number(outerRadius)) / 2;
+                  const a = (-Number(midAngle) * Math.PI) / 180;
+                  const x = Number(cx) + r * Math.cos(a);
+                  const y = Number(cy) + r * Math.sin(a);
+                  const text = `${share}%`;
+                  const w = text.length * 8 + 14;
+                  return (
+                    <g pointerEvents="none">
+                      <rect x={x - w / 2} y={y - 13} width={w} height={26} rx={8} fill="var(--card)" filter="url(#donut-bubble)" />
+                      <text x={x} y={y} dy="0.35em" textAnchor="middle" fontSize={13} fontWeight={700} fill="var(--foreground)">
+                        {text}
+                      </text>
+                    </g>
+                  );
+                }}
+              >
+                {data.map((d) => (
+                  <Cell key={d.key} fill={d.color} />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="text-muted-foreground flex h-full items-center justify-center text-sm">Nenhum treino no período.</div>
+        )}
+        {total > 0 && (
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+            <span className="font-display text-2xl font-extrabold leading-none tabular-nums">{fmt(total)}</span>
+            <span className="text-muted-foreground mt-1 text-xs">treinos</span>
+          </div>
+        )}
+      </div>
+      <ul className="space-y-1.5 text-sm">
+        {KINDS.map((k) => (
+          <li key={k.key} className="flex items-center gap-2 tabular-nums">
+            <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: k.color }} />
+            <span className="flex-1">{k.label}</span>
+            <span className="font-semibold">{fmt(byKind[k.key])}</span>
+            <span className="text-muted-foreground w-10 text-right text-xs">{pct(byKind[k.key])}%</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

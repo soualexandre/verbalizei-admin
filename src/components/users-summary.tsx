@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { UsersSummary as Summary } from "@/lib/types";
-import { HeroStat, HeroStats } from "@/components/page-hero";
+import { HeroStat, HeroStats, HeroStatsSkeleton } from "@/components/page-hero";
 import { fmt, fmtPct } from "@/components/dashboard/format";
 
 /**
@@ -22,11 +22,7 @@ export function UsersSummary() {
   if (isError) return null;
   if (isLoading || !data) {
     return (
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6" aria-busy="true" aria-label="Carregando os totais">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-[108px] animate-pulse rounded-2xl bg-white/12" />
-        ))}
-      </div>
+      <HeroStatsSkeleton count={6} />
     );
   }
 
