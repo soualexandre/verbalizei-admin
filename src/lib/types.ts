@@ -653,5 +653,8 @@ export interface UsersSummary {
   active7d: number;
   paying: number;
   onboarded: number;
-  neverTrained: number;
+  /** Nenhuma interação: sala, análise (reconhecimento, gravação, treino curto), jogo, lição, roteiro ou cenário criado. */
+  neverInteracted?: number;
+  /** API antiga (antes de 25/10/2026): só quem nunca treinou. */
+  neverTrained?: number;
 }

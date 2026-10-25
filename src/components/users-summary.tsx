@@ -31,20 +31,30 @@ export function UsersSummary() {
   }
 
   const share = (n: number) => (data.total ? fmtPct(Math.round((n / data.total) * 100)) : "—");
-  const items = [
+  const items: Array<{ label: string; value: number; note: string; help?: string }> = [
     { label: "Cadastrados", value: data.total, note: "pessoas reais" },
     { label: "Novos (7 dias)", value: data.new7d, note: `${fmt(data.new30d)} em 30 dias` },
     { label: "Treinaram (7 dias)", value: data.active7d, note: `${share(data.active7d)} da base` },
     { label: "Pagantes", value: data.paying, note: `${share(data.paying)} · Starter e Ouro` },
     { label: "Fizeram o onboarding", value: data.onboarded, note: `${share(data.onboarded)} da base` },
-    { label: "Nunca treinaram", value: data.neverTrained, note: `${share(data.neverTrained)} da base` },
+    // Nenhuma interação: nem sala, treino curto, jogo, reconhecimento, roteiro ou cenário criado.
+    ...(data.neverInteracted != null
+      ? [{
+          label: "Nunca interagiram",
+          value: data.neverInteracted,
+          note: `${share(data.neverInteracted)} da base`,
+          help: "Nunca abriram uma sala nem fizeram treino curto, jogo, reconhecimento, gravação, lição, roteiro ou cenário próprio.",
+        }]
+      : data.neverTrained != null
+        ? [{ label: "Nunca treinaram", value: data.neverTrained, note: `${share(data.neverTrained)} da base` }]
+        : []),
   ];
 
   return (
     <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6" aria-label="Totais de usuários">
       {items.map((it) => (
         <li key={it.label}>
-          <Card className="gap-0.5 rounded-xl px-3.5 py-3 shadow-none">
+          <Card className="gap-0.5 rounded-xl px-3.5 py-3 shadow-none" title={it.help}>
             <p className="text-muted-foreground truncate text-xs font-medium">{it.label}</p>
             <p className="text-xl font-semibold leading-tight tracking-tight tabular-nums">{fmt(it.value)}</p>
             <p className="text-muted-foreground truncate text-[11px] tabular-nums">{it.note}</p>
