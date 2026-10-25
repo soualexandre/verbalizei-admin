@@ -21,16 +21,18 @@ export function KpiCard({
   /** "7 dias antes: 120". */
   previousLabel: string;
   detail?: React.ReactNode;
-  /** O que o número quer dizer (no title do rótulo). */
+  /** O que o número quer dizer, numa linha embaixo do rótulo. */
   help: string;
 }) {
   const Icon =
     trend?.direction === "up" ? ArrowUpRight : trend?.direction === "down" ? ArrowDownRight : Minus;
   return (
     <Card className="gap-3 px-5 py-5 shadow-none">
-      <p className="text-muted-foreground text-sm font-medium" title={help}>
-        {label}
-      </p>
+      <div>
+        <p className="text-sm font-medium">{label}</p>
+        {/* O que o número quer dizer, à vista (25/10/2026: antes só no title). */}
+        <p className="text-muted-foreground mt-0.5 text-xs leading-snug">{help}</p>
+      </div>
       <div className="flex items-baseline gap-2">
         <p className="text-3xl font-semibold tracking-tight tabular-nums">{value}</p>
         {trend && (

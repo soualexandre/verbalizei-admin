@@ -15,6 +15,7 @@ import {
   YAxis,
   type TooltipProps,
 } from "recharts";
+import { useState } from "react";
 import type { DashboardOverview } from "@/lib/types";
 import { fmt, KINDS, shortDay } from "./format";
 
@@ -227,5 +228,126 @@ export function HourlyChart({ hourly }: { hourly: Hourly }) {
         </Bar>
       </BarChart>
     </Frame>
+  );
+}
+
+type Weekday = NonNullable<DashboardOverview["weekday"]>;
+const WEEKDAY_SHORT = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+const WEEKDAY_LONG = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
+
+/**
+ * Treinos em média por dia da semana (25/10/2026). Média por ocorrência, não o
+ * total: em 30 dias há 4 ou 5 de cada dia. O dia mais forte em azul escuro.
+ */
+export function WeekdayChart({ weekday }: { weekday: Weekday }) {
+  const peak = Math.max(0, ...weekday.map((d) => d.average));
+  const data = weekday.map((d) => ({ ...d, label: WEEKDAY_SHORT[d.weekday - 1] }));
+  return (
+    <Frame>
+      <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+        <CartesianGrid vertical={false} stroke="var(--border)" />
+        <XAxis dataKey="label" tick={AXIS} tickLine={false} axisLine={false} />
+        <YAxis allowDecimals tick={AXIS} tickLine={false} axisLine={false} width={40} />
+        <Tooltip
+          cursor={{ fill: "var(--muted)" }}
+          content={({ active, payload }: TooltipProps<number, string>) => {
+            if (!active || !payload?.length) return null;
+            const d = payload[0].payload as Weekday[number];
+            return (
+              <TooltipBox
+                title={WEEKDAY_LONG[d.weekday - 1]}
+                rows={[
+                  { label: "Treinos no período", value: d.interactions },
+                  { label: "Pessoas", value: d.users },
+                ]}
+                hint={`${d.average.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} em média, em ${d.days} ${d.days === 1 ? WEEKDAY_LONG[d.weekday - 1].toLowerCase() : "dias como este"}`}
+              />
+            );
+          }}
+        />
+        <Bar dataKey="average" radius={[4, 4, 0, 0]} maxBarSize={48} isAnimationActive={false}>
+          {data.map((d) => (
+            <Cell key={d.weekday} fill={peak > 0 && d.average === peak ? "var(--chart-1)" : "var(--chart-2)"} />
+          ))}
+        </Bar>
+      </BarChart>
+    </Frame>
+  );
+}
+
+/** Cinco tons de um azul só, do claro ao escuro (zero = fundo neutro). */
+const HEAT_STEPS = [18, 36, 56, 78, 100];
+function heatColor(n: number, max: number): string {
+  if (n <= 0 || max <= 0) return "var(--muted)";
+  const step = HEAT_STEPS[Math.min(HEAT_STEPS.length - 1, Math.floor((n / max) * HEAT_STEPS.length - 1e-9))];
+  return `color-mix(in oklab, var(--chart-1) ${step}%, var(--card))`;
+}
+
+/**
+ * Dia da semana × hora (25/10/2026): cada quadrado é uma hora de um dia, mais
+ * escuro = mais treinos. Passar o mouse (ou focar) diz o número embaixo.
+ */
+export function WeekHourHeatmap({ heatmap }: { heatmap: number[][] }) {
+  const max = Math.max(0, ...heatmap.flat());
+  const [hover, setHover] = useState<{ d: number; h: number } | null>(null);
+  const shown = hover ? heatmap[hover.d]?.[hover.h] ?? 0 : null;
+  return (
+    <div className="space-y-3">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[640px] table-fixed border-separate border-spacing-[2px] text-xs" aria-label="Treinos por dia da semana e hora">
+          <thead>
+            <tr>
+              <th className="w-10" />
+              {Array.from({ length: 24 }, (_, h) => (
+                <th key={h} scope="col" className="text-muted-foreground font-normal tabular-nums">
+                  {h % 3 === 0 ? `${h}h` : ""}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {heatmap.map((hours, d) => (
+              <tr key={d}>
+                <th scope="row" className="text-muted-foreground pr-2 text-left font-medium">
+                  {WEEKDAY_SHORT[d]}
+                </th>
+                {hours.map((n, h) => (
+                  <td key={h} className="p-0">
+                    <button
+                      type="button"
+                      aria-label={`${WEEKDAY_LONG[d]}, ${h}h às ${(h + 1) % 24}h: ${n} ${n === 1 ? "treino" : "treinos"}`}
+                      onMouseEnter={() => setHover({ d, h })}
+                      onFocus={() => setHover({ d, h })}
+                      onMouseLeave={() => setHover(null)}
+                      onBlur={() => setHover(null)}
+                      className="block h-6 w-full rounded-[3px] outline-offset-1 focus-visible:outline-2 focus-visible:outline-[var(--ring)]"
+                      style={{ background: heatColor(n, max) }}
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="text-muted-foreground flex flex-wrap items-center justify-between gap-3 text-xs">
+        <p className="tabular-nums" aria-live="polite">
+          {hover
+            ? `${WEEKDAY_LONG[hover.d]}, das ${hover.h}h às ${(hover.h + 1) % 24}h: ${fmt(shown ?? 0)} ${shown === 1 ? "treino" : "treinos"}`
+            : "Passe o mouse num quadrado para ver o número."}
+        </p>
+        <span className="flex items-center gap-1.5">
+          Menos
+          {[0, ...HEAT_STEPS].map((s, i) => (
+            <span
+              key={i}
+              className="size-3 rounded-[3px]"
+              style={{ background: s === 0 ? "var(--muted)" : `color-mix(in oklab, var(--chart-1) ${s}%, var(--card))` }}
+            />
+          ))}
+          Mais
+        </span>
+      </div>
+    </div>
   );
 }

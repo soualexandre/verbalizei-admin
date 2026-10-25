@@ -112,6 +112,15 @@ export interface DashboardOverview {
   drillLatency?: Record<"text" | "voice" | "full", LatencyStats | null>;
   /** As 24 horas (fuso de Brasília): interações que começaram em cada hora e pessoas diferentes. API antiga: ausente. */
   hourly?: Array<{ hour: number; interactions: number; users: number }>;
+  /**
+   * Dia da semana (1 = segunda … 7 = domingo, Brasília): interações, pessoas,
+   * quantas vezes o dia caiu no período e a média por ocorrência. API antiga: ausente.
+   */
+  weekday?: Array<{ weekday: number; interactions: number; users: number; days: number; average: number }>;
+  /** 7 × 24 (segunda primeiro): interações por dia da semana e hora. API antiga: ausente. */
+  heatmap?: number[][];
+  /** Funil dos novos do período. API antiga: ausente. */
+  activation?: { signups: number; onboarded: number; firstTraining: number; returned: number };
 }
 
 /** GET /admin/overview/day?day=YYYY-MM-DD (verbalizei-api src/admin/day-activity.ts): quem treinou no dia e em quê. */
