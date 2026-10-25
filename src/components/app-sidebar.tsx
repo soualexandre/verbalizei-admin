@@ -11,6 +11,7 @@ import {
   Funnel,
   ChatCircleText,
   Fingerprint,
+  Flask,
   Gauge,
   MagicWand,
   Megaphone,
@@ -42,6 +43,7 @@ const GROUPS: { key: string; label: string; items: NavItem[] }[] = [
     items: [
       { href: "/dashboard", label: "Visão geral", icon: SquaresFour },
       { href: "/activation", label: "Ativação", icon: Funnel },
+      { href: "/experiments", label: "Experimentos", icon: Flask },
       { href: "/profiles", label: "Perfis", icon: Fingerprint },
       { href: "/feedback-evaluations", label: "Avaliações de feedback", icon: ChatCircleText },
     ],

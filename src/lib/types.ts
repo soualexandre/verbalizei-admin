@@ -658,3 +658,33 @@ export interface UsersSummary {
   /** API antiga (antes de 25/10/2026): só quem nunca treinou. */
   neverTrained?: number;
 }
+
+// ─── Testes A/B (GET /admin/experiments, 25/10/2026) ───────────────────────
+
+export interface ExperimentVariantReport {
+  name: string;
+  label: string;
+  isControl: boolean;
+  assigned: number;
+  measured: number;
+  converted: number;
+  rate: number | null;
+  probabilityBest: number;
+}
+
+export type ExperimentVerdict =
+  | { kind: "winner"; variant: string }
+  | { kind: "no_difference" }
+  | { kind: "running"; missing: number };
+
+export interface ExperimentReport {
+  key: string;
+  title: string;
+  active: boolean;
+  startsAt: string;
+  metric: string;
+  daysRunning: number;
+  variants: ExperimentVariantReport[];
+  verdict: ExperimentVerdict;
+  decision: { minProbability: number; minPerArm: number; maxDays: number };
+}
