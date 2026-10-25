@@ -1,0 +1,641 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-25T12:00:00-03:00",
+  "title": "Design System: Verbalizei Admin",
+  "extensions": {
+    "colorMeta": {
+      "brand": {
+        "role": "primary",
+        "displayName": "Azul Verbalizei",
+        "canonical": "#0063de",
+        "tonalRamp": [
+          "#002a60",
+          "#003f8f",
+          "#004ba6",
+          "#0063de",
+          "#4d8fe8",
+          "#7fb0ee",
+          "#dce8fb",
+          "#eef4fd"
+        ]
+      },
+      "brand-ink": {
+        "role": "primary",
+        "displayName": "Azul tinta",
+        "canonical": "#004ba6",
+        "tonalRamp": [
+          "#002a60",
+          "#003f8f",
+          "#004ba6",
+          "#0063de",
+          "#4d8fe8",
+          "#7fb0ee",
+          "#dce8fb",
+          "#eef4fd"
+        ]
+      },
+      "brand-deep": {
+        "role": "primary",
+        "displayName": "Azul fundo",
+        "canonical": "#003f8f",
+        "tonalRamp": [
+          "#002a60",
+          "#003f8f",
+          "#004ba6",
+          "#0063de",
+          "#4d8fe8",
+          "#7fb0ee",
+          "#dce8fb",
+          "#eef4fd"
+        ]
+      },
+      "brand-50": {
+        "role": "primary",
+        "displayName": "Azul névoa",
+        "canonical": "#eef4fd",
+        "tonalRamp": [
+          "#002a60",
+          "#003f8f",
+          "#004ba6",
+          "#0063de",
+          "#4d8fe8",
+          "#7fb0ee",
+          "#dce8fb",
+          "#eef4fd"
+        ]
+      },
+      "brand-100": {
+        "role": "primary",
+        "displayName": "Azul névoa forte",
+        "canonical": "#dce8fb",
+        "tonalRamp": [
+          "#002a60",
+          "#003f8f",
+          "#004ba6",
+          "#0063de",
+          "#4d8fe8",
+          "#7fb0ee",
+          "#dce8fb",
+          "#eef4fd"
+        ]
+      },
+      "green": {
+        "role": "secondary",
+        "displayName": "Verde folha",
+        "canonical": "#81a641",
+        "tonalRamp": [
+          "#2c3e12",
+          "#4f6e22",
+          "#5f8530",
+          "#81a641",
+          "#9cbb66",
+          "#bdd396",
+          "#e7f0d6",
+          "#f1f6e6"
+        ]
+      },
+      "green-600": {
+        "role": "secondary",
+        "displayName": "Verde musgo",
+        "canonical": "#5f8530",
+        "tonalRamp": [
+          "#2c3e12",
+          "#4f6e22",
+          "#5f8530",
+          "#81a641",
+          "#9cbb66",
+          "#bdd396",
+          "#e7f0d6",
+          "#f1f6e6"
+        ]
+      },
+      "green-ink": {
+        "role": "secondary",
+        "displayName": "Verde tinta",
+        "canonical": "#4f6e22",
+        "tonalRamp": [
+          "#2c3e12",
+          "#4f6e22",
+          "#5f8530",
+          "#81a641",
+          "#9cbb66",
+          "#bdd396",
+          "#e7f0d6",
+          "#f1f6e6"
+        ]
+      },
+      "green-50": {
+        "role": "secondary",
+        "displayName": "Verde névoa",
+        "canonical": "#f1f6e6",
+        "tonalRamp": [
+          "#2c3e12",
+          "#4f6e22",
+          "#5f8530",
+          "#81a641",
+          "#9cbb66",
+          "#bdd396",
+          "#e7f0d6",
+          "#f1f6e6"
+        ]
+      },
+      "lime": {
+        "role": "tertiary",
+        "displayName": "Lima",
+        "canonical": "#cfdc3e",
+        "tonalRamp": [
+          "#3a4207",
+          "#5e6b0c",
+          "#8a9420",
+          "#a8b524",
+          "#cfdc3e",
+          "#d9de8a",
+          "#eef3b8",
+          "#f6f8d9"
+        ]
+      },
+      "lime-600": {
+        "role": "tertiary",
+        "displayName": "Lima oliva",
+        "canonical": "#a8b524",
+        "tonalRamp": [
+          "#3a4207",
+          "#5e6b0c",
+          "#8a9420",
+          "#a8b524",
+          "#cfdc3e",
+          "#d9de8a",
+          "#eef3b8",
+          "#f6f8d9"
+        ]
+      },
+      "lime-ink": {
+        "role": "tertiary",
+        "displayName": "Lima tinta",
+        "canonical": "#5e6b0c",
+        "tonalRamp": [
+          "#3a4207",
+          "#5e6b0c",
+          "#8a9420",
+          "#a8b524",
+          "#cfdc3e",
+          "#d9de8a",
+          "#eef3b8",
+          "#f6f8d9"
+        ]
+      },
+      "lime-50": {
+        "role": "tertiary",
+        "displayName": "Lima névoa",
+        "canonical": "#f6f8d9",
+        "tonalRamp": [
+          "#3a4207",
+          "#5e6b0c",
+          "#8a9420",
+          "#a8b524",
+          "#cfdc3e",
+          "#d9de8a",
+          "#eef3b8",
+          "#f6f8d9"
+        ]
+      },
+      "background": {
+        "role": "neutral",
+        "displayName": "Névoa de papel",
+        "canonical": "#f5f8fc",
+        "tonalRamp": [
+          "#0b1b33",
+          "#2c3d55",
+          "#586a82",
+          "#9aa8bb",
+          "#c3cfdf",
+          "#e2e8f1",
+          "#eef2f7",
+          "#f5f8fc"
+        ]
+      },
+      "foreground": {
+        "role": "neutral",
+        "displayName": "Tinta noturna",
+        "canonical": "#0b1b33",
+        "tonalRamp": [
+          "#0b1b33",
+          "#2c3d55",
+          "#586a82",
+          "#9aa8bb",
+          "#c3cfdf",
+          "#e2e8f1",
+          "#eef2f7",
+          "#f5f8fc"
+        ]
+      },
+      "card": {
+        "role": "neutral",
+        "displayName": "Branco",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#0b1b33",
+          "#2c3d55",
+          "#586a82",
+          "#9aa8bb",
+          "#c3cfdf",
+          "#e2e8f1",
+          "#eef2f7",
+          "#f5f8fc"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Névoa",
+        "canonical": "#eef2f7",
+        "tonalRamp": [
+          "#0b1b33",
+          "#2c3d55",
+          "#586a82",
+          "#9aa8bb",
+          "#c3cfdf",
+          "#e2e8f1",
+          "#eef2f7",
+          "#f5f8fc"
+        ]
+      },
+      "muted-foreground": {
+        "role": "neutral",
+        "displayName": "Ardósia",
+        "canonical": "#586a82",
+        "tonalRamp": [
+          "#0b1b33",
+          "#2c3d55",
+          "#586a82",
+          "#9aa8bb",
+          "#c3cfdf",
+          "#e2e8f1",
+          "#eef2f7",
+          "#f5f8fc"
+        ]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Linha",
+        "canonical": "#e2e8f1",
+        "tonalRamp": [
+          "#0b1b33",
+          "#2c3d55",
+          "#586a82",
+          "#9aa8bb",
+          "#c3cfdf",
+          "#e2e8f1",
+          "#eef2f7",
+          "#f5f8fc"
+        ]
+      },
+      "input": {
+        "role": "neutral",
+        "displayName": "Linha de campo",
+        "canonical": "#d9e1ec",
+        "tonalRamp": [
+          "#0b1b33",
+          "#2c3d55",
+          "#586a82",
+          "#9aa8bb",
+          "#c3cfdf",
+          "#e2e8f1",
+          "#eef2f7",
+          "#f5f8fc"
+        ]
+      },
+      "destructive": {
+        "role": "neutral",
+        "displayName": "Vermelho erro",
+        "canonical": "#d93a3a",
+        "tonalRamp": [
+          "#5a1212",
+          "#8f1f1f",
+          "#b82c2c",
+          "#d93a3a",
+          "#e46a6a",
+          "#ee9a9a",
+          "#f7cccc",
+          "#fcebeb"
+        ]
+      },
+      "chart-1": {
+        "role": "primary",
+        "displayName": "Gráfico: cenários",
+        "canonical": "#0063de",
+        "tonalRamp": [
+          "#002a60",
+          "#003f8f",
+          "#004ba6",
+          "#0063de",
+          "#4d8fe8",
+          "#7fb0ee",
+          "#dce8fb",
+          "#eef4fd"
+        ]
+      },
+      "chart-2": {
+        "role": "primary",
+        "displayName": "Gráfico: gravações",
+        "canonical": "#7fb0ee",
+        "tonalRamp": [
+          "#002a60",
+          "#003f8f",
+          "#004ba6",
+          "#0063de",
+          "#4d8fe8",
+          "#7fb0ee",
+          "#dce8fb",
+          "#eef4fd"
+        ]
+      },
+      "chart-3": {
+        "role": "secondary",
+        "displayName": "Gráfico: treinos curtos",
+        "canonical": "#5f8530",
+        "tonalRamp": [
+          "#2c3e12",
+          "#4f6e22",
+          "#5f8530",
+          "#81a641",
+          "#9cbb66",
+          "#bdd396",
+          "#e7f0d6",
+          "#f1f6e6"
+        ]
+      },
+      "chart-4": {
+        "role": "tertiary",
+        "displayName": "Gráfico: jogos",
+        "canonical": "#a8b524",
+        "tonalRamp": [
+          "#3a4207",
+          "#5e6b0c",
+          "#8a9420",
+          "#a8b524",
+          "#cfdc3e",
+          "#d9de8a",
+          "#eef3b8",
+          "#f6f8d9"
+        ]
+      },
+      "chart-5": {
+        "role": "neutral",
+        "displayName": "Gráfico: neutro",
+        "canonical": "#9aa8bb",
+        "tonalRamp": [
+          "#0b1b33",
+          "#2c3d55",
+          "#586a82",
+          "#9aa8bb",
+          "#c3cfdf",
+          "#e2e8f1",
+          "#eef2f7",
+          "#f5f8fc"
+        ]
+      },
+      "heat-pos": {
+        "role": "primary",
+        "displayName": "Calor: acima da média",
+        "canonical": "#7fb0ee",
+        "tonalRamp": [
+          "#002a60",
+          "#003f8f",
+          "#004ba6",
+          "#0063de",
+          "#4d8fe8",
+          "#7fb0ee",
+          "#dce8fb",
+          "#eef4fd"
+        ]
+      },
+      "heat-neg": {
+        "role": "tertiary",
+        "displayName": "Calor: abaixo da média",
+        "canonical": "#d9de8a",
+        "tonalRamp": [
+          "#3a4207",
+          "#5e6b0c",
+          "#8a9420",
+          "#a8b524",
+          "#cfdc3e",
+          "#d9de8a",
+          "#eef3b8",
+          "#f6f8d9"
+        ]
+      },
+      "heat-mid": {
+        "role": "neutral",
+        "displayName": "Calor: na média",
+        "canonical": "#eef2f7",
+        "tonalRamp": [
+          "#0b1b33",
+          "#2c3d55",
+          "#586a82",
+          "#9aa8bb",
+          "#c3cfdf",
+          "#e2e8f1",
+          "#eef2f7",
+          "#f5f8fc"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "h1 da faixa azul, um por tela."
+      },
+      "stat": {
+        "displayName": "Número",
+        "purpose": "Número do totalizador, tabular."
+      },
+      "headline": {
+        "displayName": "Título de seção",
+        "purpose": "h2 de Section."
+      },
+      "title": {
+        "displayName": "Título de cartão",
+        "purpose": "Cabeçalho de cartão e de gráfico."
+      },
+      "body": {
+        "displayName": "Texto",
+        "purpose": "Insights e descrição da faixa."
+      },
+      "label": {
+        "displayName": "Rótulo",
+        "purpose": "Rótulo do totalizador; notas em 12px."
+      }
+    },
+    "shadows": [
+      {
+        "name": "hero-glow",
+        "value": "0 12px 32px -18px rgb(0 63 143 / 0.55)",
+        "purpose": "Só a faixa azul (PageHero)."
+      },
+      {
+        "name": "button-primary",
+        "value": "0 6px 16px -8px rgba(12,76,174,0.6)",
+        "purpose": "Sob o botão azul cheio."
+      },
+      {
+        "name": "float",
+        "value": "Tailwind shadow-md / shadow-xl",
+        "purpose": "Tooltips de gráfico e gaveta do celular."
+      }
+    ],
+    "motion": [
+      {
+        "name": "press",
+        "value": "scale(0.98)",
+        "purpose": "Botões e itens de menu ao clicar."
+      },
+      {
+        "name": "state",
+        "value": "150ms ease-out",
+        "purpose": "Cor e fundo de itens de menu."
+      },
+      {
+        "name": "refetch",
+        "value": "opacity 0.7 durante isFetching",
+        "purpose": "Conteúdo esmaecido enquanto recarrega o período."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px (menu lateral aparece; abaixo, gaveta)"
+      },
+      {
+        "name": "lg",
+        "value": "1024px (grades de 2 colunas, ações ao lado do título)"
+      },
+      {
+        "name": "xl",
+        "value": "1280px (6 totalizadores por linha)"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Faixa de tela (PageHero)",
+      "kind": "custom",
+      "refersTo": "page-hero",
+      "description": "Abre toda tela: título, descrição, ações e totalizadores sobre o azul, com fio de lima na base.",
+      "html": "<section class=\"ds-hero\"><div class=\"ds-hero-top\"><div><h1 class=\"ds-hero-title\">Visão geral</h1><p class=\"ds-hero-desc\">26/09 a 25/10, comparado aos 30 dias anteriores · base de 132 pessoas.</p></div><div class=\"ds-hero-tabs\"><button class=\"ds-hero-tab ds-on\">7 dias</button><button class=\"ds-hero-tab\">30 dias</button><button class=\"ds-hero-tab\">90 dias</button></div></div><span class=\"ds-hero-spark\"></span></section>",
+      "css": ".ds-hero{position:relative;overflow:hidden;border-radius:28px;padding:32px;color:#fff;background:linear-gradient(135deg,#0063de 0%,#0063de 55%,#003f8f 100%);box-shadow:0 12px 32px -18px rgb(0 63 143/.55);font-family:'DM Sans',sans-serif}.ds-hero-top{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:flex-start}.ds-hero-title{font-family: var(--font-raleway), 'Raleway', 'DM Sans', sans-serif;font-size:2rem;font-weight:800;line-height:1.25;letter-spacing:-.025em;margin:0}.ds-hero-desc{font-size:15px;line-height:1.6;color:rgb(255 255 255/.9);margin:6px 0 0}.ds-hero-tabs{display:inline-flex;gap:2px;padding:4px;border-radius:12px;background:rgb(255 255 255/.14)}.ds-hero-tab{height:32px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:rgb(255 255 255/.92);font:500 14px 'DM Sans',sans-serif;cursor:pointer}.ds-hero-tab:hover{background:rgb(255 255 255/.1)}.ds-hero-tab:focus-visible{outline:2px solid #fff;outline-offset:2px}.ds-hero-tab.ds-on{background:#fff;color:#004ba6;font-weight:600}.ds-hero-spark{position:absolute;left:0;right:0;bottom:0;height:4px;background:#cfdc3e}"
+    },
+    {
+      "name": "Totalizador (HeroStat)",
+      "kind": "card",
+      "refersTo": "hero-stat",
+      "description": "Um número na faixa: rótulo de 2 linhas, número Raleway 800, variação embaixo, nota curta.",
+      "html": "<div class=\"ds-stat-wrap\"><div class=\"ds-stat\" title=\"Pessoas que treinaram ao menos uma vez no período.\"><p class=\"ds-stat-label\">Pessoas que treinaram</p><p class=\"ds-stat-value\">41</p><span class=\"ds-trend ds-up\">↗ +24%</span><p class=\"ds-stat-note\">31,1% da base · 30 dias antes: 33</p></div><div class=\"ds-stat\"><p class=\"ds-stat-label\">Novos cadastros</p><p class=\"ds-stat-value\">48</p><span class=\"ds-trend ds-down\">↘ −12%</span><p class=\"ds-stat-note\">22 já treinaram (46%)</p></div></div>",
+      "css": ".ds-stat-wrap{display:grid;grid-template-columns:repeat(2,minmax(0,200px));gap:12px;padding:24px;background:#0063de;border-radius:28px;font-family:'DM Sans',sans-serif}.ds-stat{display:flex;flex-direction:column;border-radius:16px;padding:16px;background:rgb(0 40 100/.32);box-shadow:inset 0 0 0 1px rgb(255 255 255/.1);color:#fff;transition:background .15s}.ds-stat:hover{background:rgb(0 40 100/.42)}.ds-stat-label{margin:0;min-height:2.75em;font-size:13px;font-weight:500;line-height:1.375;color:rgb(255 255 255/.9)}.ds-stat-value{margin:4px 0 0;font-family: var(--font-raleway), 'Raleway', 'DM Sans', sans-serif;font-size:2rem;font-weight:800;line-height:1;letter-spacing:-.025em;font-variant-numeric:tabular-nums}.ds-trend{margin-top:8px;width:fit-content;border-radius:9999px;padding:2px 6px;font-size:11px;font-weight:700}.ds-up{background:#81a641;color:#14200a}.ds-down{background:#cfdc3e;color:#2f3604}.ds-stat-note{margin:6px 0 0;font-size:12px;line-height:1.375;color:rgb(255 255 255/.9)}"
+    },
+    {
+      "name": "Botão principal",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Ação principal fora da faixa.",
+      "html": "<button class=\"ds-btn-primary\">Salvar limite</button>",
+      "css": ".ds-btn-primary{height:40px;padding:0 16px;border:0;border-radius:12px;background:#0063de;color:#fff;font:700 14px 'DM Sans',sans-serif;box-shadow:0 6px 16px -8px rgba(12,76,174,.6);cursor:pointer;transition:background .15s,transform .15s}.ds-btn-primary:hover{background:#0a3d8f}.ds-btn-primary:active{transform:scale(.98)}.ds-btn-primary:focus-visible{outline:none;box-shadow:0 0 0 3px rgb(0 99 222/.5)}"
+    },
+    {
+      "name": "Botão de contorno",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Ação secundária e o Tentar de novo.",
+      "html": "<button class=\"ds-btn-outline\">Tentar de novo</button>",
+      "css": ".ds-btn-outline{height:36px;padding:0 12px;border:1px solid #e2e8f1;border-radius:12px;background:#fff;color:#586a82;font:600 14px 'DM Sans',sans-serif;cursor:pointer;transition:border-color .15s,color .15s,transform .15s}.ds-btn-outline:hover{border-color:#94a3b8;color:#0b1b33}.ds-btn-outline:active{transform:scale(.98)}.ds-btn-outline:focus-visible{outline:none;box-shadow:0 0 0 3px rgb(0 99 222/.5)}"
+    },
+    {
+      "name": "Campo de texto",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Campo padrão, 40 px, canto 12 px.",
+      "html": "<input class=\"ds-input\" placeholder=\"Buscar por nome ou e-mail\" />",
+      "css": ".ds-input{height:40px;width:280px;padding:0 12px;border:1px solid #d9e1ec;border-radius:12px;background:#fff;color:#0b1b33;font:400 14px 'DM Sans',sans-serif;transition:box-shadow .15s,border-color .15s}.ds-input::placeholder{color:#586a82}.ds-input:hover{border-color:#c3cfdf}.ds-input:focus-visible{outline:none;border-color:#0063de;box-shadow:0 0 0 3px rgb(0 99 222/.5)}"
+    },
+    {
+      "name": "Menu lateral",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "Grupos Métricas/Pessoas/Conteúdo; ativo em pílula azul névoa com ícone cheio.",
+      "html": "<nav class=\"ds-nav\"><p class=\"ds-nav-group\">Métricas</p><a class=\"ds-nav-item ds-active\" href=\"#\"><svg viewBox=\"0 0 256 256\" width=\"22\" height=\"22\" fill=\"currentColor\"><path d=\"M120 56v48a16 16 0 0 1-16 16H56a16 16 0 0 1-16-16V56a16 16 0 0 1 16-16h48a16 16 0 0 1 16 16Zm80-16h-48a16 16 0 0 0-16 16v48a16 16 0 0 0 16 16h48a16 16 0 0 0 16-16V56a16 16 0 0 0-16-16Zm-96 96H56a16 16 0 0 0-16 16v48a16 16 0 0 0 16 16h48a16 16 0 0 0 16-16v-48a16 16 0 0 0-16-16Zm96 0h-48a16 16 0 0 0-16 16v48a16 16 0 0 0 16 16h48a16 16 0 0 0 16-16v-48a16 16 0 0 0-16-16Z\"/></svg>Visão geral</a><a class=\"ds-nav-item\" href=\"#\"><svg viewBox=\"0 0 256 256\" width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"16\"><path d=\"M40 48h176l-64 80v72l-48 16v-88Z\" stroke-linejoin=\"round\"/></svg>Ativação</a></nav>",
+      "css": ".ds-nav{width:232px;padding:12px;background:#fff;font-family:'DM Sans',sans-serif}.ds-nav-group{margin:0 0 4px;padding:0 12px;height:32px;line-height:32px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#586a82}.ds-nav-item{display:flex;align-items:center;gap:12px;height:44px;padding:0 12px;border-radius:12px;color:#586a82;font-size:15px;font-weight:500;text-decoration:none;transition:background .15s,color .15s,transform .15s}.ds-nav-item svg{color:rgb(88 106 130/.8)}.ds-nav-item:hover{background:rgb(0 0 0/.04);color:#0b1b33}.ds-nav-item:active{transform:scale(.98)}.ds-nav-item:focus-visible{outline:none;box-shadow:0 0 0 2px #fff,0 0 0 4px #0063de}.ds-nav-item.ds-active{background:#eef4fd;color:#0b1b33;font-weight:600}.ds-nav-item.ds-active svg{color:#0063de}"
+    },
+    {
+      "name": "Insights (InsightList)",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "Frases que leem os números, ponto no tom do sentido.",
+      "html": "<div class=\"ds-card\"><h2 class=\"ds-section-title\">O que os números dizem</h2><ul class=\"ds-insights\"><li><span class=\"ds-dot\" style=\"background:#0063de\"></span>Quarta é o dia em que mais se treina: 55 treinos em média.</li><li><span class=\"ds-dot\" style=\"background:#81a641\"></span>42% de quem treinou antes voltou a treinar, 5 pontos acima.</li><li><span class=\"ds-dot\" style=\"background:#a8b524\"></span>Só 46% dos novos cadastros já treinaram: vale um lembrete no 1º dia.</li></ul></div>",
+      "css": ".ds-card{max-width:560px;padding:24px;border:1px solid #e2e8f1;border-radius:22px;background:#fff;color:#0b1b33;font-family:'DM Sans',sans-serif;transition:border-color .15s}.ds-card:hover{border-color:#d9e1ec}.ds-section-title{font-family: var(--font-raleway), 'Raleway', 'DM Sans', sans-serif;font-size:1.25rem;font-weight:700;letter-spacing:-.015em;margin:0 0 16px}.ds-insights{list-style:none;margin:0;padding:0;display:grid;gap:12px}.ds-insights li{display:flex;gap:12px;font-size:15px;line-height:1.375}.ds-dot{flex-shrink:0;width:8px;height:8px;margin-top:7px;border-radius:9999px}"
+    },
+    {
+      "name": "Estado de erro (ErrorState)",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "O único estado de erro do admin: o que não carregou, o que fazer, detalhe técnico, Tentar de novo.",
+      "html": "<div class=\"ds-error\" role=\"alert\"><span class=\"ds-error-icon\"><svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"12\" y1=\"8\" x2=\"12\" y2=\"12\"/><line x1=\"12\" y1=\"16\" x2=\"12.01\" y2=\"16\"/></svg></span><div class=\"ds-error-body\"><p class=\"ds-error-title\">Não foi possível carregar a visão geral.</p><p class=\"ds-error-text\">Pode ser a conexão ou a API fora do ar. Tente de novo; se continuar, avise o time técnico.</p><p class=\"ds-error-detail\">Detalhe: tempo esgotado.</p></div><button class=\"ds-error-retry\">Tentar de novo</button></div>",
+      "css": ".ds-error{display:flex;align-items:center;gap:16px;max-width:720px;padding:24px;border:1px solid #e2e8f1;border-radius:22px;background:#fff;font-family:'DM Sans',sans-serif;color:#0b1b33}.ds-error-icon{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:44px;height:44px;border-radius:9999px;background:#eef4fd;color:#004ba6}.ds-error-body{flex:1;min-width:0}.ds-error-title{margin:0;font-weight:600}.ds-error-text{margin:4px 0 0;font-size:14px;color:#586a82}.ds-error-detail{margin:4px 0 0;font-size:12px;color:#586a82}.ds-error-retry{flex-shrink:0;height:36px;padding:0 12px;border:1px solid #e2e8f1;border-radius:12px;background:#fff;color:#586a82;font:600 14px 'DM Sans',sans-serif;cursor:pointer}.ds-error-retry:hover{border-color:#94a3b8;color:#0b1b33}.ds-error-retry:focus-visible{outline:none;box-shadow:0 0 0 3px rgb(0 99 222/.5)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "O placar da marca",
+    "overview": "O admin veste a identidade oficial do Verbalizei (manual de marca, out/2026), a mesma do verbalizei_web: azul, verde, lima e branco, Raleway nos títulos e DM Sans no texto. A direção foi **fixada pelo usuário em 25/10/2026**, não sorteada: ele pinou a identidade e, numa pergunta estruturada, escolheu \"faixa de cor no topo\" em \"todas as telas\". Por isso a rolagem de conceito da skill (FORM / seed key) não rodou; esta decisão ocupa o lugar dela.\n\nToda tela lê de cima para baixo na mesma ordem: **faixa azul** (título, ações, totalizadores) → **gráficos e conteúdo principal** em cartões brancos → **insights**, frases que dizem o que o número significa e o que fazer. A faixa é o único campo de cor cheio da tela; abaixo dela, o branco carrega os dados e a cor da marca aparece só nos dados.\n\nDensidade de painel de trabalho, sem enfeite: números grandes na faixa, gráficos de 220 px, frases curtas. O produto pede conclusão, não planilha (PRODUCT.md), e o layout serve a isso.",
+    "keyCharacteristics": [
+      "Uma faixa azul por tela, com um fio de lima na base.",
+      "Cor por significado: azul = uso/ação, verde = melhorou, lima = atenção, vermelho só erro.",
+      "Cartões brancos de canto largo, quase sem sombra.",
+      "Números em Raleway 800 com algarismos tabulares.",
+      "Um componente para cada estado: `ErrorState` para erro, `HeroStatsSkeleton` para os totais carregando."
+    ],
+    "rules": [
+      {
+        "name": "The Meaning Rule",
+        "body": "Cor diz significado, igual em todas as telas: azul = marca/uso/ação; verde = melhorou; lima = atenção; branco translúcido = estável. Uma queda nunca é vermelha.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Spark Rule",
+        "body": "O lima puro aparece uma vez por tela como acento: o fio na base da faixa. Fora dele, só a pílula de queda na faixa.",
+        "section": "colors"
+      },
+      {
+        "name": "The No Orange Rule",
+        "body": "A marca não tem laranja. Vermelho existe só para erro e ação destrutiva.",
+        "section": "colors"
+      },
+      {
+        "name": "The Raleway For Headings Rule",
+        "body": "h1, h2 e h3 são Raleway (global em globals.css); tudo o mais é DM Sans. Número que importa usa `font-display` + `tabular-nums`.",
+        "section": "typography"
+      },
+      {
+        "name": "The Hero First Rule",
+        "body": "Toda tela abre em `PageHero`. Os totais moram dentro dela; não há linha de KPI em cartões brancos abaixo.",
+        "section": "layout"
+      }
+    ],
+    "dos": [
+      "**Do** abrir toda tela nova com `PageHero` (título, descrição de uma linha, ações, `HeroStats`) e seguir com `Section`s de gráficos e, por último, `InsightList` / lista de \"o que fazer\".",
+      "**Do** dar a cada número um rótulo de duas linhas no máximo, uma nota curta e o `help` com a definição.",
+      "**Do** usar as cores de gráfico na ordem cenários / gravações / treinos curtos / jogos, sempre com legenda nomeada e tooltip.",
+      "**Do** usar `ErrorState` para qualquer falha de carga e `HeroStatsSkeleton` para os totais carregando.",
+      "**Do** usar lime-600 (não lime) para sinalizar atenção sobre fundo branco."
+    ],
+    "donts": [
+      "**Don't** pintar uma segunda área de cor cheia na tela; a faixa é a única.",
+      "**Don't** usar laranja, ou vermelho para queda de métrica; queda é lima.",
+      "**Don't** pôr texto pequeno abaixo de white/90 na faixa.",
+      "**Don't** criar linha de KPI em cartões brancos (o antigo `KpiCard`); os totais moram na faixa.",
+      "**Don't** distinguir séries só pela cor.",
+      "**Don't** escrever mensagem de erro crua em vermelho no lugar do `ErrorState`."
+    ]
+  }
+}
