@@ -11,7 +11,7 @@ import { fmt, fmtPct, pointsTrend, relativeTrend, shortDay } from "./format";
 import { dayparts, funnelSentence, funnelSteps, hourSentence, slotSentence, summarySentences, weekdaySentence } from "./insights";
 
 /**
- * Os totalizadores da Visão geral, na faixa azul (PageHero). Padrão do admin
+ * Os totalizadores da Visão geral, no topo (PageHero), o primeiro em verde de destaque. Padrão do admin
  * desde 25/10/2026: totalizadores no topo → gráficos → insights.
  */
 export function OverviewStats({ data }: { data: DashboardOverview }) {
@@ -93,7 +93,7 @@ export function Overview({ data }: { data: DashboardOverview }) {
   const completionRate = completion.started ? (completion.completed / completion.started) * 100 : null;
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const summary = summarySentences(data);
-  // Sentido da cor igual ao da faixa: azul = uso, verde = bom sinal.
+  // Sentido da cor: verde-escuro = uso, verde = bom sinal.
   const tones: InsightTone[] = ["brand", "green", "brand", "brand", "brand"];
 
   return (

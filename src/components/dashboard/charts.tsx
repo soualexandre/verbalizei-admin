@@ -197,7 +197,7 @@ export const hourLabel = (h: number) => `${h}h`;
 
 /**
  * Horário de uso: as 24 horas do dia (fuso de Brasília), com as interações que
- * começaram em cada uma. A hora de pico em azul forte; as outras em azul claro.
+ * começaram em cada uma. A hora de pico em verde-escuro; as outras em verde-claro.
  */
 export function HourlyChart({ hourly }: { hourly: Hourly }) {
   const peak = Math.max(0, ...hourly.map((h) => h.interactions));
@@ -239,7 +239,7 @@ const WEEKDAY_LONG = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado
 
 /**
  * Treinos em média por dia da semana (25/10/2026). Média por ocorrência, não o
- * total: em 30 dias há 4 ou 5 de cada dia. O dia mais forte em azul escuro.
+ * total: em 30 dias há 4 ou 5 de cada dia. O dia mais forte em verde-escuro.
  */
 export function WeekdayChart({ weekday }: { weekday: Weekday }) {
   const peak = Math.max(0, ...weekday.map((d) => d.average));
@@ -277,7 +277,7 @@ export function WeekdayChart({ weekday }: { weekday: Weekday }) {
   );
 }
 
-/** Cinco tons de um azul só, do claro ao escuro (zero = fundo neutro). */
+/** Cinco tons de um verde só, do claro ao escuro (zero = fundo neutro). */
 const HEAT_STEPS = [18, 36, 56, 78, 100];
 function heatColor(n: number, max: number): string {
   if (n <= 0 || max <= 0) return "var(--muted)";

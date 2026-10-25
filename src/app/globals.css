@@ -244,7 +244,10 @@ html {
 }
 .stat:first-child .stat-label,
 .stat:first-child .stat-note { color: rgb(19 32 10 / 0.82); }
-.stat:first-child .stat-trend { background: #1f3a0a; color: #fff; }
+/* No destaque a pílula mantém o sentido: alta escura, queda em lima, estável clara. */
+.stat:first-child .stat-trend[data-dir="up"] { background: #1f3a0a; color: #fff; }
+.stat:first-child .stat-trend[data-dir="down"] { background: var(--lime); color: #2f3604; }
+.stat:first-child .stat-trend[data-dir="flat"] { background: rgb(255 255 255 / 0.55); color: #13200a; }
 @media (min-width: 64rem) {
   .stat:first-child .stat-value { font-size: 2.75rem; }
 }
