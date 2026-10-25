@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Funnel,
   Barbell,
   ChatCircleText,
   Fingerprint,
@@ -21,6 +22,7 @@ import { BrandLogo } from "@/components/brand-logo";
 
 const NAV: { href: string; label: string; icon: Icon }[] = [
   { href: "/dashboard", label: "Visão geral", icon: SquaresFour },
+  { href: "/activation", label: "Ativação", icon: Funnel },
   { href: "/users", label: "Usuários", icon: Users },
   { href: "/profiles", label: "Perfis", icon: Fingerprint },
   { href: "/feedback-evaluations", label: "Avaliações de feedback", icon: ChatCircleText },

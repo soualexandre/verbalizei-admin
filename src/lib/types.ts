@@ -623,3 +623,24 @@ export interface CreateTrainingQuotaGrantPayload {
   amount: number;
   reason: string;
 }
+
+/** GET /admin/reports/activation (verbalizei-api src/admin/activation-report): do cadastro ao hábito. */
+export interface ActivationReport {
+  generatedAt: string;
+  days: number;
+  totals: {
+    signups: number;
+    didSomething: number;
+    stuckOnboarding: number;
+    createdScenario: number;
+    spoke: number;
+    returned: number;
+  };
+  funnel: Array<{ key: string; label: string; people: number; ofSignups: number | null; ofPrevious: number | null; parallel: boolean }>;
+  gaps: Array<{ from: string; to: string; lost: number; lostShare: number | null; fix: string }>;
+  stuckAt: Array<{ stage: string; people: number; action: string }>;
+  signals: string[];
+  onboardingDropoff: Array<{ step: string; people: number }>;
+  breakdowns: Record<string, Array<{ group: string; signups: number; onboarded: number; enteredRoom: number; spoke: number; returned: number; activation: number | null }>>;
+  failures: Array<{ kind: string; code: string; users: number; jobs: number }>;
+}
