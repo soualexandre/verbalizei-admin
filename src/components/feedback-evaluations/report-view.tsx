@@ -51,6 +51,7 @@ export function ReportView({ data, onOpenEvaluation }: { data: ReportResponse; o
           As recomendações da IA não vieram: {data.insightsError}
         </p>
       )}
+      <ClarityCard report={r} />
       <AgreementSection report={r} />
       <div className="grid gap-6 lg:grid-cols-2">
         <CalibrationCard report={r} />
@@ -415,6 +416,7 @@ function AgreementSection({ report: r }: { report: EvaluationReport }) {
             label={(c) => (
               <span className="font-mono text-xs">
                 {c.promptVersion} · {c.copyVersion} · {c.model} · {c.source}
+                {c.unclear ? <span className="text-destructive"> · não entendi {c.unclear} ({pct(c.unclearRate ?? null)})</span> : null}
               </span>
             )}
           />
@@ -429,6 +431,59 @@ function AgreementSection({ report: r }: { report: EvaluationReport }) {
             <DirectionTable cells={r.byDuration} label={(c) => c.key} first="Duração" />
           </div>
         </div>
+      </div>
+    </Section>
+  );
+}
+
+/**
+ * Clareza do retorno (25/10/2026): quantos disseram "não entendi" contra a meta
+ * de 10% e as análises cuja nota contradiz as áreas da tela (a causa de 21–25/10).
+ */
+const SCREEN_AREA: Record<string, string> = {
+  clarity: "clareza",
+  structure: "estrutura",
+  pace: "ritmo",
+  engagement: "engajamento",
+};
+
+function ClarityCard({ report: r }: { report: EvaluationReport }) {
+  const c = r.clarity;
+  const m = r.scoreMismatch;
+  if (!c || !m) return null;
+  const over = c.rate != null && c.rate >= c.target;
+  return (
+    <Section
+      title="Clareza do retorno"
+      description={`Meta: menos de ${pct(c.target)} das respostas globais com "Não entendi o retorno".`}
+    >
+      <div className="space-y-3 text-sm">
+        {c.n ? (
+          <p>
+            <span className={over ? "text-destructive font-semibold" : "font-semibold"}>{pct(c.rate)}</span>{" "}
+            ({c.unclear} de {c.n} respostas globais) disseram que não entenderam o retorno.
+          </p>
+        ) : (
+          <Empty />
+        )}
+        {m.n ? (
+          <div className="space-y-1">
+            <p>
+              <span className="text-destructive font-semibold">{m.n}</span> de {m.analyses} análises avaliadas têm nota que
+              contradiz as áreas da tela:
+            </p>
+            <ul className="text-muted-foreground space-y-0.5">
+              {m.samples.map((s) => (
+                <li key={s.jobId} className="font-mono text-xs">
+                  {s.jobId.slice(0, 8)} · nota {s.overallScore} · média das áreas {s.areasMean} ·{" "}
+                  {SCREEN_AREA[s.lowest.key] ?? s.lowest.key} {s.lowest.score}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <p className="text-muted-foreground">Nenhuma nota contradiz as áreas da tela.</p>
+        )}
       </div>
     </Section>
   );

@@ -97,7 +97,25 @@ export interface EvaluationReport {
   };
   global: DirectionCell;
   byKind: DirectionCell[];
-  byVersion: Array<DirectionCell & { promptVersion: string; copyVersion: string; model: string; source: string }>;
+  byVersion: Array<
+    DirectionCell & {
+      promptVersion: string;
+      copyVersion: string;
+      model: string;
+      source: string;
+      /** "Não entendi o retorno" (25/10/2026; ausente em API antiga). */
+      unclear?: number;
+      unclearRate?: number | null;
+    }
+  >;
+  /** "Não entendi o retorno" nas respostas globais; meta abaixo de `target` (25/10/2026). */
+  clarity?: { n: number; unclear: number; rate: number | null; target: number };
+  /** Análises cuja nota contradiz as áreas mostradas. */
+  scoreMismatch?: {
+    analyses: number;
+    n: number;
+    samples: Array<{ jobId: string; overallScore: number; areasMean: number; lowest: { key: string; score: number } }>;
+  };
   bySource: DirectionCell[];
   byDuration: DirectionCell[];
   scoreCalibration: Array<DirectionCell & { band: number; label: string; meanScore: number | null }>;
