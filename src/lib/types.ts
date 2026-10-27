@@ -643,6 +643,34 @@ export interface ActivationReport {
   onboardingDropoff: Array<{ step: string; people: number }>;
   breakdowns: Record<string, Array<{ group: string; signups: number; onboarded: number; enteredRoom: number; spoke: number; returned: number; activation: number | null }>>;
   failures: Array<{ kind: string; code: string; users: number; jobs: number }>;
+  /** Desde 27/10/2026 (plano de medição). Opcionais: a API antiga não manda. */
+  northStar?: {
+    threeInSeven: ActivationRate;
+    secondDay: ActivationRate;
+    firstSpeech: { people: number; p50: number | null; p90: number | null };
+  };
+  cohorts?: Array<{
+    week: string;
+    signups: number;
+    mature: number;
+    spoke: number;
+    voltouD1: ActivationRate;
+    falouD1: ActivationRate;
+    voltouD7: ActivationRate;
+    falouD7: ActivationRate;
+    threeInSeven: ActivationRate;
+    fullWeek: number;
+    /** Pessoas por dias com fala na semana 1: [0, 1, 2, 3, 4+]. */
+    l7: number[];
+  }>;
+  firstSpeechByVersion?: Array<{ group: string; people: number; p50: number | null; p90: number | null }>;
+}
+
+/** Taxa que só conta quem já pode ser medido (o prazo acabou ou já chegou lá). */
+export interface ActivationRate {
+  people: number;
+  eligible: number;
+  share: number | null;
 }
 
 /** GET /admin/users/summary: totalizadores da tela de Usuários (só pessoas reais). */

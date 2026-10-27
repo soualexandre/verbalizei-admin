@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Download, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch, api } from "@/lib/api";
-import type { ActivationReport } from "@/lib/types";
+import type { ActivationRate, ActivationReport } from "@/lib/types";
 import { ErrorState } from "@/components/error-state";
 import { HeroStat, HeroStats, InsightList, PageHero, Section, HeroStatsSkeleton } from "@/components/page-hero";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ const PERIODS = [7, 30, 90, 180] as const;
 /** Os recortes, na ordem do seletor (as chaves vêm da API). */
 const BREAKDOWNS: Array<{ key: string; label: string }> = [
   { key: "semana", label: "Semana de cadastro" },
+  { key: "semana_24h", label: "Semana de cadastro (só ≥ 24 h)" },
   { key: "origem", label: "Origem do cadastro" },
   { key: "canal", label: "Canal (web ou app)" },
   { key: "aparelho", label: "Aparelho" },
@@ -29,6 +30,8 @@ const BREAKDOWNS: Array<{ key: string; label: string }> = [
   { key: "momento", label: "Momento da carreira" },
   { key: "area", label: "Área" },
   { key: "onboarding", label: "Versão do onboarding" },
+  { key: "onboarding_24h", label: "Versão do onboarding (só ≥ 24 h)" },
+  { key: "fim_onboarding", label: "Onde terminou o onboarding" },
 ];
 
 /**
@@ -186,6 +189,8 @@ function Report({ data }: { data: ActivationReport }) {
 
   return (
     <>
+      <NorthStarSection data={data} />
+
       <Section title="Funil" description="Cada barra é a % dos cadastros que chegou à etapa; ao lado, quanto passou da etapa anterior.">
         <Card className="shadow-none">
           <CardContent className="space-y-4 pt-6">
@@ -416,6 +421,95 @@ function BreakdownSection({ breakdowns }: { breakdowns: ActivationReport["breakd
               </tbody>
             </table>
           </div>
+        </CardContent>
+      </Card>
+    </Section>
+  );
+}
+
+const rateText = (r: ActivationRate) => (r.eligible ? `${fmt(r.people)}/${fmt(r.eligible)}` : "—");
+const minutes = (m: number | null) => (m == null ? "—" : `${(Math.round(m * 10) / 10).toLocaleString("pt-BR")} min`);
+
+/**
+ * Métrica-norte "3 em 7", 2º dia e 1ª fala, e as coortes semanais (27/10/2026,
+ * plano de medição do estudo de ativação). Cada taxa conta só quem já pode ser
+ * medido: a semana corrente não aparece como queda.
+ */
+function NorthStarSection({ data }: { data: ActivationReport }) {
+  const ns = data.northStar;
+  const cohorts = data.cohorts ?? [];
+  if (!ns) return null;
+  const items = [
+    {
+      label: "3 em 7 (métrica-norte)",
+      value: ns.threeInSeven.share == null ? "—" : fmtPct(ns.threeInSeven.share),
+      note: `${rateText(ns.threeInSeven)} falaram em 3 sessões nos 7 dias do cadastro`,
+    },
+    {
+      label: "2º dia",
+      value: ns.secondDay.share == null ? "—" : fmtPct(ns.secondDay.share),
+      note: `${rateText(ns.secondDay)} falaram em 2+ dias (contas com ≥ 24 h)`,
+    },
+    {
+      label: "Até a 1ª fala",
+      value: minutes(ns.firstSpeech.p50),
+      note: `mediana depois do onboarding · p90 ${minutes(ns.firstSpeech.p90)}`,
+    },
+  ];
+  return (
+    <Section title="Métrica-norte e coortes" description="Só conta quem já teve tempo: a semana corrente não aparece como queda. Dias de Brasília.">
+      <Card className="shadow-none">
+        <CardContent className="space-y-6 pt-6">
+          <dl className="grid gap-4 sm:grid-cols-3">
+            {items.map((i) => (
+              <div key={i.label} className="space-y-1">
+                <dt className="text-muted-foreground text-sm">{i.label}</dt>
+                <dd className="font-display text-2xl font-bold tabular-nums">{i.value}</dd>
+                <dd className="text-muted-foreground text-sm">{i.note}</dd>
+              </div>
+            ))}
+          </dl>
+          {cohorts.length > 0 && (
+            <div className="overflow-x-auto border-t pt-4">
+              <table className="w-full min-w-[720px] text-sm tabular-nums">
+                <thead>
+                  <tr className="text-muted-foreground text-left">
+                    <th className="py-1.5 font-medium">Semana</th>
+                    <th className="py-1.5 text-right font-medium">Cadastros</th>
+                    <th className="py-1.5 text-right font-medium">≥ 24 h</th>
+                    <th className="py-1.5 text-right font-medium">Falou</th>
+                    <th className="py-1.5 text-right font-medium">Voltou D1</th>
+                    <th className="py-1.5 text-right font-medium">Falou D1</th>
+                    <th className="py-1.5 text-right font-medium">Voltou D7</th>
+                    <th className="py-1.5 text-right font-medium">Falou D7</th>
+                    <th className="py-1.5 text-right font-medium">3 em 7</th>
+                    <th className="py-1.5 text-right font-medium" title="Pessoas por dias com fala na 1ª semana">
+                      L7: 0 · 1 · 2 · 3 · 4+
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cohorts.map((c) => (
+                    <tr key={c.week} className="border-t">
+                      <td className="py-2">{c.week.split("-").reverse().slice(0, 2).join("/")}</td>
+                      <td className="py-2 text-right">{fmt(c.signups)}</td>
+                      <td className="py-2 text-right">{fmt(c.mature)}</td>
+                      <td className="py-2 text-right">{fmt(c.spoke)}</td>
+                      <td className="py-2 text-right">{rateText(c.voltouD1)}</td>
+                      <td className="py-2 text-right">{rateText(c.falouD1)}</td>
+                      <td className="py-2 text-right">{rateText(c.voltouD7)}</td>
+                      <td className="py-2 text-right">{rateText(c.falouD7)}</td>
+                      <td className="py-2 text-right font-semibold">{rateText(c.threeInSeven)}</td>
+                      <td className="py-2 text-right">{c.l7.join(" · ")}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="text-muted-foreground mt-2 text-xs">
+                Semana começa na segunda. &ldquo;1/3&rdquo; = 1 de 3 que já podem ser medidos. D1 é o dia seguinte ao cadastro; D7, o 7º dia.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </Section>

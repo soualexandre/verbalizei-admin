@@ -18,6 +18,7 @@ import {
   SignOut,
   SquaresFour,
   Users,
+  WhatsappLogo,
   type Icon,
 } from "@phosphor-icons/react";
 import { cn, initials } from "@/lib/utils";
@@ -55,6 +56,7 @@ const GROUPS: { key: string; label: string; items: NavItem[] }[] = [
       { href: "/users", label: "Usuários", icon: Users },
       { href: "/training-quota", label: "Cota de treinos", icon: Gauge },
       { href: "/enrichment", label: "Enriquecimento", icon: MagicWand },
+      { href: "/retention", label: "Retorno manual", icon: WhatsappLogo },
     ],
   },
   {
