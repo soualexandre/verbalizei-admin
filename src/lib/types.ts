@@ -716,3 +716,59 @@ export interface ExperimentReport {
   verdict: ExperimentVerdict;
   decision: { minProbability: number; minPerArm: number; maxDays: number };
 }
+
+// ─── Empresas (B2B, verbalizei-api/docs/empresas.md) ─────────────────────────
+
+export type OrgRole = "OWNER" | "MANAGER" | "MEMBER";
+export type OrgStatus = "ACTIVE" | "PAUSED";
+
+export interface AdminOrganizationSummary {
+  id: string;
+  name: string;
+  inviteCode: string;
+  seats: number;
+  seatsUsed: number;
+  activeUntil: string | null;
+  status: OrgStatus;
+  active: boolean;
+  weeklyGoal: number;
+  owner: { name: string | null; email: string | null } | null;
+  managers: number;
+  scenarios: number;
+  sessions30d: number;
+  createdAt: string;
+}
+
+export interface AdminOrganizationMember {
+  userId: string;
+  name: string | null;
+  email: string | null;
+  role: OrgRole;
+  joinedAt: string;
+  lastLoginAt: string | null;
+  sessions30d: number;
+}
+
+export interface AdminOrganizationDetail {
+  id: string;
+  name: string;
+  inviteCode: string;
+  seats: number;
+  seatsUsed: number;
+  activeUntil: string | null;
+  status: OrgStatus;
+  active: boolean;
+  weeklyGoal: number;
+  portalUrl: string;
+  createdAt: string;
+  members: AdminOrganizationMember[];
+  scenarios: Array<{ id: string; title: string; status: string; createdAt: string }>;
+}
+
+/** Resposta de criar empresa ou pôr alguém no time: o que a API fez por e-mail. */
+export interface OrgPersonResult {
+  created?: boolean;
+  ownerCreated?: boolean;
+  welcomeSent: boolean;
+  passwordEmailSent: boolean;
+}
