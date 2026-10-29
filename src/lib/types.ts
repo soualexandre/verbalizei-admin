@@ -732,6 +732,8 @@ export interface AdminOrganizationSummary {
   status: OrgStatus;
   active: boolean;
   weeklyGoal: number;
+  /** Versão da logo (hash); nula sem logo. */
+  logoVersion: string | null;
   owner: { name: string | null; email: string | null } | null;
   managers: number;
   scenarios: number;
@@ -759,6 +761,7 @@ export interface AdminOrganizationDetail {
   status: OrgStatus;
   active: boolean;
   weeklyGoal: number;
+  logoVersion: string | null;
   portalUrl: string;
   createdAt: string;
   members: AdminOrganizationMember[];

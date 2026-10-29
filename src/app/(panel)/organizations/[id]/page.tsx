@@ -1,5 +1,6 @@
 "use client";
 
+import { OrgLogo } from "@/components/org-logo";
 import { use, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -76,6 +77,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
           description={
             org && (
               <span className="inline-flex flex-wrap items-center gap-2">
+                <OrgLogo id={org.id} name={org.name} logoVersion={org.logoVersion} />
                 <Badge variant={org.active ? "success" : org.status === "PAUSED" ? "secondary" : "warning"}>{validityText(org)}</Badge>
                 <span>Criada em {formatDate(org.createdAt)} · meta de {org.weeklyGoal} treinos por semana</span>
               </span>

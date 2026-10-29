@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { OrgLogo } from "@/components/org-logo";
 import { fmt } from "@/components/dashboard/format";
 import { NewOrganizationDialog } from "./new-organization-dialog";
 
@@ -88,8 +89,13 @@ export default function OrganizationsPage() {
                     items.map((o) => (
                       <TableRow key={o.id}>
                         <TableCell>
-                          <Link href={`/organizations/${o.id}`} className="font-medium hover:underline">{o.name}</Link>
-                          <p className="text-muted-foreground text-xs">{o.owner ? `${o.owner.name ?? ""} ${o.owner.email ? `· ${o.owner.email}` : ""}`.trim() : "Sem dono"}</p>
+                          <div className="flex items-center gap-3">
+                            <OrgLogo id={o.id} name={o.name} logoVersion={o.logoVersion} />
+                            <div>
+                              <Link href={`/organizations/${o.id}`} className="font-medium hover:underline">{o.name}</Link>
+                              <p className="text-muted-foreground text-xs">{o.owner ? `${o.owner.name ?? ""} ${o.owner.email ? `· ${o.owner.email}` : ""}`.trim() : "Sem dono"}</p>
+                            </div>
+                          </div>
                         </TableCell>
                         <TableCell>
                           <Badge variant={o.active ? "success" : o.status === "PAUSED" ? "secondary" : "warning"}>{validityText(o)}</Badge>
