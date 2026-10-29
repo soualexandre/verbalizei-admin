@@ -216,6 +216,15 @@ export interface Paginated<T> {
 }
 
 export interface UserDetail {
+  /** Quem é a pessoa (null em respostas antigas da API). */
+  profile?: {
+    name: string | null;
+    email: string;
+    phoneNumber: string | null;
+    plan: string;
+    createdAt: string;
+    lastLoginAt: string | null;
+  } | null;
   onboarding: {
     data: Record<string, unknown> | null;
     segment: UserSegment | null;
@@ -774,4 +783,179 @@ export interface OrgPersonResult {
   ownerCreated?: boolean;
   welcomeSent: boolean;
   passwordEmailSent: boolean;
+}
+
+// ─── Gravações de uma pessoa (29/10/2026) ───────────────────────────────────
+
+export type RecordingKind = "TRAINING_ATTEMPT" | "LESSON_CHALLENGE" | "RECORDING" | "DRILL" | "MEETING";
+export type RecordingStatus = "QUEUED" | "PROCESSING" | "COMPLETED" | "FAILED" | (string & {});
+
+/** A medida principal de cada área, lida do resultado da análise. */
+export interface RecordingMetrics {
+  wpm: number | null;
+  articulationRate: number | null;
+  fillersPerMinute: number | null;
+  fillersTotal: number | null;
+  longestPause: number | null;
+  longPauses: number | null;
+  monotony: number | null;
+  wordCount: number | null;
+  categories: Record<string, number> | null;
+}
+
+export interface RecordingListItem {
+  id: string;
+  kind: RecordingKind;
+  status: RecordingStatus;
+  title: string | null;
+  createdAt: string;
+  durationSeconds: number | null;
+  overallScore: number | null;
+  errorCode: string | null;
+  meetingId: string | null;
+  hasAudio: boolean;
+  metrics: RecordingMetrics;
+}
+
+export interface RecordingsPage {
+  items: RecordingListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+  counts: Partial<Record<RecordingKind, number>>;
+}
+
+export interface RecordingKeyPoint {
+  type?: "strength" | "improve";
+  text?: string;
+  evidence?: string;
+}
+
+export interface RecordingTurnNote {
+  kind?: "strength" | "improve";
+  text?: string;
+  quote?: string | null;
+}
+
+export interface RecordingTurn {
+  speaker?: "persona" | "user";
+  personaId?: string | null;
+  text?: string;
+  notes?: RecordingTurnNote[];
+}
+
+export interface RecordingSegment {
+  id: string;
+  index?: number;
+  status?: string;
+  durationSeconds?: number | null;
+  transcript?: string | null;
+  audioUrl?: string | null;
+  metrics?: { wpm?: number; fillerCount?: number; fillersPerMinute?: number; wordCount?: number } | null;
+  quickFeedback?: { highlight?: string | null; adjust?: string | null } | null;
+}
+
+/** O resultado gravado pela pipeline (todos os campos podem faltar). */
+export interface RecordingResult {
+  speechRate?: number;
+  articulationRate?: number;
+  wpm?: number;
+  longestPause?: number;
+  longPauses?: number;
+  avgPause?: number;
+  monotonyScore?: number;
+  wordCount?: number;
+  fillerWords?: { total?: number; perMinute?: number; top?: Array<{ word?: string; count?: number }> };
+  categories?: Record<string, number>;
+  transcript?: string;
+  fullText?: string;
+  reliability?: { level?: "ok" | "low"; reason?: string | null; wordCount?: number; transcriptConfidence?: number };
+  [key: string]: unknown;
+}
+
+/** O detalhe da análise, o mesmo que a pessoa recebe no app (AnalysisJobDto). */
+export interface RecordingJob {
+  id: string;
+  kind: RecordingKind;
+  status: RecordingStatus;
+  title?: string | null;
+  overallScore?: number | null;
+  errorCode?: string | null;
+  error?: string | null;
+  failureCheck?: string | null;
+  durationSeconds?: number | null;
+  createdAt: string;
+  completedAt?: string | null;
+  result?: RecordingResult | null;
+  resultMeta?: Record<string, unknown> | null;
+  audioUrl?: string | null;
+  playbackAudioUrl?: string | null;
+  playbackDurationSeconds?: number | null;
+  trainingAttempt?: {
+    transcript?: string | null;
+    analysisItems?: {
+      summary?: string;
+      tip?: string;
+      keyPoints?: RecordingKeyPoint[];
+      positives?: string[];
+      improvements?: string[];
+      conversation?: RecordingTurn[];
+    } | null;
+  } | null;
+  training?: {
+    title?: string;
+    personas?: Array<{ id: string; name: string; role?: string }>;
+    segments?: RecordingSegment[];
+  } | null;
+}
+
+export interface RecordingEvaluation {
+  id: string;
+  targetType: string;
+  targetKey: string | null;
+  status: string;
+  verdict: string | null;
+  value: Record<string, unknown> | null;
+  reasons: string[];
+  comment: string | null;
+  surface: string | null;
+  createdAt: string;
+}
+
+export interface RecordingMeeting {
+  id: string;
+  title: string | null;
+  provider: string | null;
+  mode: string | null;
+  startedAt: string | null;
+  endedAt: string | null;
+  durationSeconds: number | null;
+  participants: Array<{ id?: string; name?: string | null; email?: string | null; isHost?: boolean; talkSeconds?: number }> | null;
+  speakerTimeline: unknown;
+  transcript: unknown;
+  audio: Array<{ key: string; url: string | null }>;
+  segments: Array<{ id: string; index: number; durationSeconds: number | null; transcript: string | null; audioUrl: string | null }>;
+}
+
+export interface RecordingDetail {
+  job: RecordingJob;
+  evaluations: RecordingEvaluation[];
+  meeting: RecordingMeeting | null;
+}
+
+export interface EvolutionPoint extends RecordingMetrics {
+  id: string;
+  kind: RecordingKind;
+  title: string | null;
+  createdAt: string;
+  durationSeconds: number | null;
+  overallScore: number | null;
+}
+
+export interface AccessLogItem {
+  id: string;
+  action: "recordings_list" | "recording_open" | "evolution" | (string & {});
+  resourceId: string | null;
+  createdAt: string;
+  actor: { id: string; name: string | null; email: string | null };
 }

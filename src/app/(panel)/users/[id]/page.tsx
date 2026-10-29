@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useMemo } from "react";
+import { use, useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Dumbbell, FileBarChart, WandSparkles } from "lucide-react";
@@ -19,6 +19,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RecordingsTab } from "@/components/user-recordings/recordings-tab";
+import { EvolutionTab } from "@/components/user-recordings/evolution-tab";
+import { AccessLogTab } from "@/components/user-recordings/access-log-tab";
 import {
   Card,
   CardContent,
@@ -40,8 +44,10 @@ export default function UserDetailPage({
     queryFn: () => api.get<UserDetail>(`/admin/users/${id}/detail`),
   });
 
-  // O detalhe da API não traz nome e e-mail: usa a linha da lista de
-  // Usuários, se ela já foi carregada nesta sessão (sem pedido novo).
+  const [tab, setTab] = useState("geral");
+
+  // Sem `profile` (API antiga), usa a linha da lista de Usuários, se ela já
+  // foi carregada nesta sessão (sem pedido novo).
   const listed = useMemo(() => {
     for (const [, page] of qc.getQueriesData<Paginated<AdminUser>>({ queryKey: ["users"] })) {
       const found = page?.data?.find((u) => u.id === id);
@@ -50,13 +56,20 @@ export default function UserDetailPage({
     return null;
   }, [qc, id]);
 
-  const title = listed ? listed.name || listed.email : "Detalhes do usuário";
-  const description = listed
+  const person = data?.profile ?? listed;
+  const title = person ? person.name || person.email : "Detalhes do usuário";
+  const description = person
     ? [
-        listed.name ? listed.email : null,
-        `plano ${listed.plan}`,
+        person.name ? person.email : null,
+        data?.profile?.phoneNumber ?? null,
+        `plano ${person.plan}`,
         data?.onboarding.segment ? `segmento ${data.onboarding.segment}` : null,
-        `cadastro em ${formatDate(listed.createdAt)}`,
+        `membro desde ${formatDate(person.createdAt)}`,
+        data?.profile
+          ? data.profile.lastLoginAt
+            ? `último acesso em ${formatDateTime(data.profile.lastLoginAt)}`
+            : "nunca entrou de novo"
+          : null,
       ]
         .filter(Boolean)
         .join(" · ")
@@ -95,7 +108,28 @@ export default function UserDetailPage({
       ) : !data ? (
         <p className="text-muted-foreground">Usuário não encontrado.</p>
       ) : (
-        <div className="space-y-12">
+        <Tabs value={tab} onValueChange={setTab} className="min-w-0 space-y-8">
+          <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+            <TabsList>
+              <TabsTrigger value="geral">Visão geral</TabsTrigger>
+              <TabsTrigger value="gravacoes">Gravações</TabsTrigger>
+              <TabsTrigger value="evolucao">Evolução</TabsTrigger>
+              <TabsTrigger value="acessos">Acessos</TabsTrigger>
+            </TabsList>
+          </div>
+
+          {/* Cada aba só monta (e só busca os dados) quando está aberta. */}
+          <TabsContent value="gravacoes" className="min-w-0">
+            <RecordingsTab userId={id} />
+          </TabsContent>
+          <TabsContent value="evolucao" className="min-w-0">
+            <EvolutionTab userId={id} />
+          </TabsContent>
+          <TabsContent value="acessos" className="min-w-0">
+            <AccessLogTab userId={id} />
+          </TabsContent>
+
+          <TabsContent value="geral" className="space-y-12">
           <Section title="Perfil e cota" description="O que a pessoa respondeu ao entrar, o que inferimos dela e quantos treinos ainda tem.">
             <div className="space-y-4">
               <Card className="shadow-none">
@@ -185,7 +219,8 @@ export default function UserDetailPage({
           </Section>
 
           <UserInsights detail={data} />
-        </div>
+          </TabsContent>
+        </Tabs>
       )}
     </>
   );
