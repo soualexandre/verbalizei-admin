@@ -90,7 +90,7 @@ export default function OrganizationsPage() {
                       <TableRow key={o.id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <OrgLogo id={o.id} name={o.name} logoVersion={o.logoVersion} />
+                            <OrgLogo id={o.id} name={o.name} logoVersion={o.logoVersion} decorative />
                             <div>
                               <Link href={`/organizations/${o.id}`} className="font-medium hover:underline">{o.name}</Link>
                               <p className="text-muted-foreground text-xs">{o.owner ? `${o.owner.name ?? ""} ${o.owner.email ? `· ${o.owner.email}` : ""}`.trim() : "Sem dono"}</p>
