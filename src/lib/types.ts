@@ -657,6 +657,8 @@ export interface ActivationReport {
     threeInSeven: ActivationRate;
     secondDay: ActivationRate;
     firstSpeech: { people: number; p50: number | null; p90: number | null };
+    /** Do cadastro ao 1º treino (minutos), entre quem já treinou; `signups` é o total da janela. */
+    firstTraining?: { people: number; signups: number; p50: number | null; p90: number | null };
   };
   cohorts?: Array<{
     week: string;

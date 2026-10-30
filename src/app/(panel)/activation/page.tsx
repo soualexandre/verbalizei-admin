@@ -429,6 +429,17 @@ function BreakdownSection({ breakdowns }: { breakdowns: ActivationReport["breakd
 
 const rateText = (r: ActivationRate) => (r.eligible ? `${fmt(r.people)}/${fmt(r.eligible)}` : "—");
 const minutes = (m: number | null) => (m == null ? "—" : `${(Math.round(m * 10) / 10).toLocaleString("pt-BR")} min`);
+/** Tempo em texto de gente: "12 min", "3 h 20 min", "2 dias" (o mesmo do relatório em Markdown). */
+const duration = (m: number | null) => {
+  if (m == null) return "—";
+  if (m < 60) return `${Math.max(0, Math.round(m))} min`;
+  if (m < 48 * 60) {
+    const h = Math.floor(m / 60);
+    const rest = Math.round(m - h * 60);
+    return rest ? `${h} h ${rest} min` : `${h} h`;
+  }
+  return `${Math.round(m / (24 * 60))} dias`;
+};
 
 /**
  * Métrica-norte "3 em 7", 2º dia e 1ª fala, e as coortes semanais (27/10/2026,
@@ -439,7 +450,17 @@ function NorthStarSection({ data }: { data: ActivationReport }) {
   const ns = data.northStar;
   const cohorts = data.cohorts ?? [];
   if (!ns) return null;
+  const ft = ns.firstTraining;
   const items = [
+    ...(ft
+      ? [
+          {
+            label: "Do cadastro ao 1º treino",
+            value: duration(ft.p50),
+            note: `mediana · p90 ${duration(ft.p90)} · ${fmt(ft.people)} de ${fmt(ft.signups)} cadastros já treinaram${ft.signups ? ` (${fmtPct(Math.round((ft.people / ft.signups) * 100))})` : ""}`,
+          },
+        ]
+      : []),
     {
       label: "3 em 7 (métrica-norte)",
       value: ns.threeInSeven.share == null ? "—" : fmtPct(ns.threeInSeven.share),
@@ -460,7 +481,7 @@ function NorthStarSection({ data }: { data: ActivationReport }) {
     <Section title="Métrica-norte e coortes" description="Só conta quem já teve tempo: a semana corrente não aparece como queda. Dias de Brasília.">
       <Card className="shadow-none">
         <CardContent className="space-y-6 pt-6">
-          <dl className="grid gap-4 sm:grid-cols-3">
+          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {items.map((i) => (
               <div key={i.label} className="space-y-1">
                 <dt className="text-muted-foreground text-sm">{i.label}</dt>
