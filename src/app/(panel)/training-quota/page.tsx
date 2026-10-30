@@ -22,11 +22,14 @@ import {
   REASON_MAX,
   REASON_MIN,
   formatAuditChange,
+  formatDrillRule,
   formatPeriodKey,
   formatRule,
   formatRuleShort,
   personLabel,
   quotaKeys,
+  type AdminDrillQuota,
+  type UpdateDrillQuotaPayload,
 } from "@/lib/training-quota";
 import { ErrorState } from "@/components/error-state";
 import { HeroStat, HeroStats, InsightList, PageHero, Section, type InsightTone, HeroStatsSkeleton } from "@/components/page-hero";
@@ -101,6 +104,13 @@ export default function TrainingQuotaPage() {
           />
         </Section>
       )}
+
+      <Section
+        title="Treinos curtos por dia"
+        description="Quantos treinos curtos diferentes o plano gratuito faz por dia (horário de Brasília). Refazer o mesmo treino no mesmo dia não conta de novo. Planos pagos não têm limite."
+      >
+        <DrillQuotaCard />
+      </Section>
 
       <Section
         title="Histórico de alterações"
@@ -345,6 +355,125 @@ function PolicyForm({ policy }: { policy: TrainingQuotaPolicy }) {
   );
 }
 
+/** Treinos curtos por dia do FREE (docs/cota-de-treinos.md, 30/10/2026). */
+function DrillQuotaCard() {
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
+    queryKey: quotaKeys.drill(),
+    queryFn: () => api.get<AdminDrillQuota>("/admin/drill-quota"),
+  });
+  if (isError)
+    return (
+      <ErrorCard
+        title="Não foi possível carregar os treinos curtos."
+        error={error}
+        onRetry={() => refetch()}
+        retrying={isFetching}
+      />
+    );
+  if (isLoading || !data) return <Skeleton className="h-48 rounded-card" />;
+  return (
+    <DrillQuotaForm
+      key={`${data.policy.perDay ?? "none"}-${data.policy.updatedAt ?? "default"}`}
+      policy={data.policy}
+    />
+  );
+}
+
+function DrillQuotaForm({ policy }: { policy: AdminDrillQuota["policy"] }) {
+  const qc = useQueryClient();
+  const [perDayInput, setPerDayInput] = useState(
+    policy.perDay === null ? "" : String(policy.perDay),
+  );
+  const [reason, setReason] = useState("");
+
+  const blank = perDayInput.trim() === "";
+  const parsed = Number(perDayInput);
+  const perDay: number | null = blank ? null : parsed;
+  const valid =
+    blank ||
+    (Number.isInteger(parsed) && parsed >= QUOTA_LIMIT_MIN && parsed <= QUOTA_LIMIT_MAX);
+  const reasonLength = reason.trim().length;
+  const reasonValid = reasonLength >= REASON_MIN && reasonLength <= REASON_MAX;
+  const changed = perDay !== policy.perDay;
+  const canSubmit = valid && reasonValid && changed;
+
+  const mutation = useMutation({
+    mutationFn: (payload: UpdateDrillQuotaPayload) =>
+      api.patch<AdminDrillQuota>("/admin/drill-quota", payload),
+    onSuccess: (res) => {
+      toast.success(`Treinos curtos: ${formatDrillRule(res.policy.perDay)}.`);
+      qc.setQueryData(quotaKeys.drill(), res);
+      qc.invalidateQueries({ queryKey: quotaKeys.all });
+      setReason("");
+    },
+    onError: (e) =>
+      toast.error(e instanceof Error ? e.message : "Não foi possível salvar."),
+  });
+
+  return (
+    <Card className="shadow-none">
+      <CardContent>
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (canSubmit) mutation.mutate({ perDay, reason: reason.trim() });
+          }}
+        >
+          <div className="grid gap-4 sm:grid-cols-2 lg:max-w-xl">
+            <div className="space-y-2">
+              <Label htmlFor="drill-per-day">Treinos curtos por dia</Label>
+              <Input
+                id="drill-per-day"
+                type="number"
+                inputMode="numeric"
+                min={QUOTA_LIMIT_MIN}
+                max={QUOTA_LIMIT_MAX}
+                step={1}
+                placeholder="sem limite"
+                value={perDayInput}
+                onChange={(e) => setPerDayInput(e.target.value)}
+                aria-invalid={!valid}
+              />
+              <p className={valid ? "text-muted-foreground text-xs" : "text-destructive text-xs"}>
+                Vazio = sem limite. Número inteiro de {QUOTA_LIMIT_MIN} a {QUOTA_LIMIT_MAX}.
+                Hoje: {formatDrillRule(policy.perDay)}
+                {policy.isDefault || !policy.updatedBy
+                  ? " (padrão do sistema)"
+                  : `, por ${personLabel(policy.updatedBy)} em ${formatDate(policy.updatedAt)}`}
+                .
+              </p>
+            </div>
+          </div>
+          <div className="space-y-2 lg:max-w-xl">
+            <Label htmlFor="drill-reason">Motivo (obrigatório)</Label>
+            <Textarea
+              id="drill-reason"
+              placeholder="Ex.: teste de conversão com 2 treinos curtos por dia"
+              value={reason}
+              maxLength={REASON_MAX}
+              onChange={(e) => setReason(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button type="submit" disabled={!canSubmit || mutation.isPending}>
+              {mutation.isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Save className="size-4" />
+              )}
+              Salvar
+            </Button>
+            {!changed && (
+              <span className="text-muted-foreground text-sm">Igual à regra atual.</span>
+            )}
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
 function AuditHistory() {
   const [page, setPage] = useState(1);
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
@@ -405,7 +534,7 @@ function AuditHistory() {
                     <TableRow key={item.id}>
                       <TableCell>
                         <Badge
-                          variant={item.action === "POLICY_UPDATED" ? "secondary" : "success"}
+                          variant={item.action === "GRANT_CREATED" ? "success" : "secondary"}
                         >
                           {AUDIT_ACTION_LABEL[item.action] ?? item.action}
                         </Badge>

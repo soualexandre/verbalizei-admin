@@ -646,6 +646,17 @@ export interface ActivationReport {
     returned: number;
   };
   funnel: Array<{ key: string; label: string; people: number; ofSignups: number | null; ofPrevious: number | null; parallel: boolean }>;
+  /**
+   * Funil de receita (30/10/2026): cadastrou → treinou → voltou_outro_dia →
+   * viu_oferta → pagou. Opcional: a API antiga não manda.
+   */
+  revenueFunnel?: Array<{
+    key: "cadastrou" | "treinou" | "voltou_outro_dia" | "viu_oferta" | "pagou";
+    label: string;
+    people: number;
+    ofSignups: number | null;
+    ofPrevious: number | null;
+  }>;
   gaps: Array<{ from: string; to: string; lost: number; lostShare: number | null; fix: string }>;
   stuckAt: Array<{ stage: string; people: number; action: string }>;
   signals: string[];

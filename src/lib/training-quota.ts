@@ -17,7 +17,30 @@ export const quotaKeys = {
   overview: () => ["training-quota", "overview"] as const,
   audit: (page: number) => ["training-quota", "audit", page] as const,
   user: (userId: string) => ["training-quota", "user", userId] as const,
+  drill: () => ["training-quota", "drill"] as const,
 };
+
+/** GET/PATCH /admin/drill-quota: treinos curtos por dia do plano gratuito. */
+export interface AdminDrillQuota {
+  policy: {
+    plan: "FREE";
+    /** null = sem limite. */
+    perDay: number | null;
+    updatedAt: string | null;
+    updatedBy: QuotaPersonRef | null;
+    isDefault: boolean;
+  };
+}
+
+export interface UpdateDrillQuotaPayload {
+  perDay: number | null;
+  reason: string;
+}
+
+/** "1 por dia" / "sem limite" */
+export function formatDrillRule(perDay: number | null): string {
+  return perDay === null ? "sem limite" : `${perDay} por dia`;
+}
 
 export const PERIOD_LABEL: Record<QuotaPeriod, string> = {
   WEEK: "Semanal",
@@ -32,6 +55,7 @@ const PERIOD_NOUN: Record<QuotaPeriod, string> = {
 export const AUDIT_ACTION_LABEL: Record<string, string> = {
   POLICY_UPDATED: "Regra alterada",
   GRANT_CREATED: "Treinos extras concedidos",
+  DRILL_POLICY_UPDATED: "Treinos curtos por dia",
 };
 
 export function pluralTrainings(n: number): string {
@@ -106,6 +130,17 @@ export function formatAuditChange(item: TrainingQuotaAuditItem): string {
     const before = ruleFromJson(item.before);
     const after = ruleFromJson(item.after);
     if (after) return `${before ?? "padrão"} → ${after}`;
+  }
+
+  if (item.action === "DRILL_POLICY_UPDATED") {
+    const before = asRecord(item.before);
+    const after = asRecord(item.after);
+    const perDay = (r: Record<string, unknown> | null) =>
+      r && (typeof r.perDay === "number" || r.perDay === null)
+        ? formatDrillRule(r.perDay as number | null)
+        : null;
+    const a = perDay(after);
+    if (a) return `${perDay(before) ?? "padrão"} → ${a}`;
   }
 
   if (item.action === "GRANT_CREATED") {

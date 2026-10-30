@@ -178,6 +178,34 @@ function ActivationStats({ totals: t }: { totals: ActivationReport["totals"] }) 
 }
 
 
+type FunnelBarStep = { key: string; label: string; people: number; ofSignups: number | null; ofPrevious: number | null };
+
+/** Barras do funil: % dos cadastros na barra; ao lado, quanto passou da etapa anterior. */
+function FunnelBars({ steps }: { steps: FunnelBarStep[] }) {
+  return (
+    <ol className="space-y-3">
+      {steps.map((s) => (
+        <li key={s.key} className="space-y-1.5">
+          <div className="flex items-baseline justify-between gap-3 text-sm">
+            <span className="font-medium">{s.label}</span>
+            <span className="shrink-0 tabular-nums">
+              <span className="font-semibold">{fmt(s.people)}</span>
+              <span className="text-muted-foreground">
+                {" "}
+                · {s.ofSignups == null ? "—" : fmtPct(s.ofSignups)} do cadastro
+                {s.key !== "cadastrou" && s.ofPrevious != null ? ` · ${fmtPct(s.ofPrevious)} da anterior` : ""}
+              </span>
+            </span>
+          </div>
+          <div className="bg-muted h-2.5 overflow-hidden rounded-full">
+            <div className="h-full rounded-full bg-[var(--chart-1)]" style={{ width: `${Math.max(s.people ? 1.5 : 0, s.ofSignups ?? 0)}%` }} />
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 /**
  * Abaixo da faixa, no padrão do admin: gráficos (funil e recortes) e depois
  * os insights (perdas com o que resolve, sinais, quem nunca falou, falhas).
@@ -194,26 +222,7 @@ function Report({ data }: { data: ActivationReport }) {
       <Section title="Funil" description="Cada barra é a % dos cadastros que chegou à etapa; ao lado, quanto passou da etapa anterior.">
         <Card className="shadow-none">
           <CardContent className="space-y-4 pt-6">
-            <ol className="space-y-3">
-              {main.map((s) => (
-                <li key={s.key} className="space-y-1.5">
-                  <div className="flex items-baseline justify-between gap-3 text-sm">
-                    <span className="font-medium">{s.label}</span>
-                    <span className="shrink-0 tabular-nums">
-                      <span className="font-semibold">{fmt(s.people)}</span>
-                      <span className="text-muted-foreground">
-                        {" "}
-                        · {s.ofSignups == null ? "—" : fmtPct(s.ofSignups)} do cadastro
-                        {s.key !== "cadastrou" && s.ofPrevious != null ? ` · ${fmtPct(s.ofPrevious)} da anterior` : ""}
-                      </span>
-                    </span>
-                  </div>
-                  <div className="bg-muted h-2.5 overflow-hidden rounded-full">
-                    <div className="h-full rounded-full bg-[var(--chart-1)]" style={{ width: `${Math.max(s.people ? 1.5 : 0, s.ofSignups ?? 0)}%` }} />
-                  </div>
-                </li>
-              ))}
-            </ol>
+            <FunnelBars steps={main} />
             {parallel.length > 0 && (
               <div className="border-t pt-4">
                 <p className="text-muted-foreground mb-2 text-sm">Em paralelo (não condicionam as etapas acima):</p>
@@ -233,6 +242,16 @@ function Report({ data }: { data: ActivationReport }) {
           </CardContent>
         </Card>
       </Section>
+
+      {data.revenueFunnel && (
+        <Section title="Funil de receita" description="Do cadastro ao pagamento. A oferta só é medida a partir de 30/10/2026.">
+          <Card className="shadow-none">
+            <CardContent className="pt-6">
+              <FunnelBars steps={data.revenueFunnel} />
+            </CardContent>
+          </Card>
+        </Section>
+      )}
 
       <BreakdownSection breakdowns={data.breakdowns} />
 
