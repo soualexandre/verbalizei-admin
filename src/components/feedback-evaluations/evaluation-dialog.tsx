@@ -142,7 +142,6 @@ export function EvaluationDialog({
                   ver pessoa
                 </Link>
               </p>
-              {job.audioUrl && <audio controls preload="none" src={job.audioUrl} className="w-full" />}
               {job.transcript && (
                 <details>
                   <summary className="cursor-pointer font-medium">Transcrição</summary>

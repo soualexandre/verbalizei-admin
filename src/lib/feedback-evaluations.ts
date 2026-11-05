@@ -101,7 +101,6 @@ export interface EvaluationDetail {
     resultFingerprint: string | null;
     analysisItems: unknown;
     transcript: string | null;
-    audioUrl: string | null;
     stale: boolean;
   };
 }

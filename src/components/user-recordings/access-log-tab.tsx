@@ -10,13 +10,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
+// As duas primeiras só aparecem em registros antigos: ouvir as gravações saiu
+// do admin em 04/11/2026.
 const ACTION_LABEL: Record<string, string> = {
   recordings_list: "Viu a lista de gravações",
   recording_open: "Abriu uma gravação",
   evolution: "Viu a evolução",
 };
 
-/** Quem do admin olhou as gravações desta pessoa, e quando. */
+/** Quem do admin olhou a evolução desta pessoa, e quando. */
 export function AccessLogTab({ userId }: { userId: string }) {
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["user-access-log", userId],
@@ -26,7 +28,7 @@ export function AccessLogTab({ userId }: { userId: string }) {
   return (
     <Section
       title="Acessos"
-      description="Toda vez que alguém do admin abre uma gravação, a lista de gravações ou a evolução desta pessoa, fica registrado aqui. Mostra os 100 mais recentes."
+      description="Toda vez que alguém do admin abre a evolução desta pessoa, fica registrado aqui. Mostra os 100 mais recentes."
     >
       <Card className="min-w-0 shadow-none">
         <CardContent className="pt-6">
@@ -39,7 +41,7 @@ export function AccessLogTab({ userId }: { userId: string }) {
               ))}
             </div>
           ) : !data.items.length ? (
-            <p className="text-muted-foreground text-sm">Ninguém abriu as gravações desta pessoa ainda.</p>
+            <p className="text-muted-foreground text-sm">Ninguém do admin abriu os dados desta pessoa ainda.</p>
           ) : (
             <Table>
               <TableHeader>

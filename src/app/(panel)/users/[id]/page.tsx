@@ -20,7 +20,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RecordingsTab } from "@/components/user-recordings/recordings-tab";
 import { EvolutionTab } from "@/components/user-recordings/evolution-tab";
 import { AccessLogTab } from "@/components/user-recordings/access-log-tab";
 import {
@@ -112,16 +111,12 @@ export default function UserDetailPage({
           <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
             <TabsList>
               <TabsTrigger value="geral">Visão geral</TabsTrigger>
-              <TabsTrigger value="gravacoes">Gravações</TabsTrigger>
               <TabsTrigger value="evolucao">Evolução</TabsTrigger>
               <TabsTrigger value="acessos">Acessos</TabsTrigger>
             </TabsList>
           </div>
 
           {/* Cada aba só monta (e só busca os dados) quando está aberta. */}
-          <TabsContent value="gravacoes" className="min-w-0">
-            <RecordingsTab userId={id} />
-          </TabsContent>
           <TabsContent value="evolucao" className="min-w-0">
             <EvolutionTab userId={id} />
           </TabsContent>
