@@ -117,6 +117,8 @@ export interface EvaluationReport {
     samples: Array<{ jobId: string; overallScore: number; areasMean: number; lowest: { key: string; score: number } }>;
   };
   bySource: DirectionCell[];
+  /** Coach da pipeline: regras × modelo do A/B (10/11/2026). Ausente em relatórios antigos. */
+  byCoach?: DirectionCell[];
   byDuration: DirectionCell[];
   scoreCalibration: Array<DirectionCell & { band: number; label: string; meanScore: number | null }>;
   selfAssessment: {

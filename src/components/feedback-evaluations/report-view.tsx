@@ -430,6 +430,13 @@ function AgreementSection({ report: r }: { report: EvaluationReport }) {
             <h3 className="text-sm font-semibold">Por duração da fala</h3>
             <DirectionTable cells={r.byDuration} label={(c) => c.key} first="Duração" />
           </div>
+          {r.byCoach?.length ? (
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold">Por coach da pipeline</h3>
+              <p className="text-xs text-muted-foreground">Regras × cada modelo do A/B. Decida com 30 respostas ou mais por linha.</p>
+              <DirectionTable cells={r.byCoach} label={(c) => <span className="font-mono text-xs">{c.key}</span>} first="Coach" />
+            </div>
+          ) : null}
         </div>
       </div>
     </Section>
