@@ -3,9 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Handshake, Plus } from "lucide-react";
 import { api } from "@/lib/api";
-import { validityText } from "@/lib/organizations";
+import { KIND_LABEL, validityText } from "@/lib/organizations";
 import type { AdminOrganizationSummary } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import { ErrorState } from "@/components/error-state";
@@ -17,11 +17,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { OrgLogo } from "@/components/org-logo";
 import { fmt } from "@/components/dashboard/format";
-import { NewOrganizationDialog } from "./new-organization-dialog";
+import { NewOrganizationDialog, type NewOrganizationMode } from "./new-organization-dialog";
 
 /** Empresas (B2B): cada cliente com o gestor, os assentos, a validade e o uso nos últimos 30 dias. */
 export default function OrganizationsPage() {
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState<NewOrganizationMode | null>(null);
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["organizations"],
     queryFn: () => api.get<{ items: AdminOrganizationSummary[] }>("/admin/organizations"),
@@ -36,11 +36,16 @@ export default function OrganizationsPage() {
     <div className="space-y-12">
       <PageHero
         title="Empresas"
-        description="Os clientes do Verbalizei para Empresas: quem administra cada time, os assentos, a validade e quanto o time treinou."
+        description="Os clientes do Verbalizei para Empresas e as turmas de estudantes: quem administra cada time, o parceiro, os assentos, a validade e quanto o time treinou."
         actions={
-          <Button onClick={() => setCreating(true)}>
-            <Plus className="size-4" /> Nova empresa
-          </Button>
+          <>
+            <Button variant="outline" onClick={() => setCreating("PARTNER")}>
+              <Handshake className="size-4" /> Empresa para parceiro
+            </Button>
+            <Button onClick={() => setCreating("COMPANY")}>
+              <Plus className="size-4" /> Nova empresa ou turma
+            </Button>
+          </>
         }
       >
         {isLoading ? (
@@ -65,6 +70,7 @@ export default function OrganizationsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Empresa</TableHead>
+                    <TableHead>Tipo</TableHead>
                     <TableHead>Situação</TableHead>
                     <TableHead>Assentos</TableHead>
                     <TableHead>Treinos (30 dias)</TableHead>
@@ -76,12 +82,12 @@ export default function OrganizationsPage() {
                   {isLoading ? (
                     Array.from({ length: 4 }).map((_, i) => (
                       <TableRow key={i}>
-                        <TableCell colSpan={6}><Skeleton className="h-8 w-full" /></TableCell>
+                        <TableCell colSpan={7}><Skeleton className="h-8 w-full" /></TableCell>
                       </TableRow>
                     ))
                   ) : items.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-muted-foreground py-10 text-center">
+                      <TableCell colSpan={7} className="text-muted-foreground py-10 text-center">
                         Nenhuma empresa ainda. Crie a primeira com o gestor do piloto.
                       </TableCell>
                     </TableRow>
@@ -95,6 +101,12 @@ export default function OrganizationsPage() {
                               <Link href={`/organizations/${o.id}`} className="font-medium hover:underline">{o.name}</Link>
                               <p className="text-muted-foreground text-xs">{o.owner ? `${o.owner.name ?? ""} ${o.owner.email ? `· ${o.owner.email}` : ""}`.trim() : "Sem dono"}</p>
                             </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <Badge variant={o.kind === "GROUP" ? "outline" : "secondary"}>{KIND_LABEL[o.kind] ?? KIND_LABEL.COMPANY}</Badge>
+                            {o.partnerName && <p className="text-muted-foreground text-xs">Parceiro: {o.partnerName}</p>}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -114,7 +126,7 @@ export default function OrganizationsPage() {
         )}
       </Section>
 
-      <NewOrganizationDialog open={creating} onOpenChange={setCreating} />
+      <NewOrganizationDialog open={creating !== null} onOpenChange={(o) => !o && setCreating(null)} initialMode={creating ?? "COMPANY"} />
     </div>
   );
 }

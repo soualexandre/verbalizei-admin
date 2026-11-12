@@ -1,12 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
-import { ROLE_LABEL, dateInputToIso, isoToDateInput, personToast } from "@/lib/organizations";
-import type { AdminOrganizationDetail, OrgPersonResult, OrgRole } from "@/lib/types";
+import { KIND_LABEL, ROLE_LABEL, copyResultText, dateInputToIso, isoToDateInput, personToast } from "@/lib/organizations";
+import type {
+  AdminOrganizationDetail,
+  AdminOrganizationSummary,
+  CopyScenariosResult,
+  OrgKind,
+  OrgPersonResult,
+  OrgRole,
+} from "@/lib/types";
 import {
   Dialog,
   DialogContent,
@@ -106,7 +113,7 @@ export function AddMemberDialog({
   );
 }
 
-/** Nome, meta, assentos, validade e se o acesso está ativo ou pausado. */
+/** Nome, tipo, parceiro, meta, assentos, validade e se o acesso está ativo ou pausado. */
 export function EditOrganizationDialog({
   org,
   open,
@@ -123,6 +130,8 @@ export function EditOrganizationDialog({
   const [seats, setSeats] = useState(String(org.seats));
   const [until, setUntil] = useState(isoToDateInput(org.activeUntil));
   const [active, setActive] = useState(org.status === "ACTIVE");
+  const [kind, setKind] = useState<OrgKind>(org.kind ?? "COMPANY");
+  const [partner, setPartner] = useState(org.partnerName ?? "");
 
   useEffect(() => {
     if (!open) return;
@@ -131,6 +140,8 @@ export function EditOrganizationDialog({
     setSeats(String(org.seats));
     setUntil(isoToDateInput(org.activeUntil));
     setActive(org.status === "ACTIVE");
+    setKind(org.kind ?? "COMPANY");
+    setPartner(org.partnerName ?? "");
   }, [open, org]);
 
   const mutation = useMutation({
@@ -141,6 +152,8 @@ export function EditOrganizationDialog({
         seats: Number(seats),
         activeUntil: dateInputToIso(until),
         status: active ? "ACTIVE" : "PAUSED",
+        kind,
+        partnerName: partner.trim(),
       }),
     onSuccess: () => {
       toast.success("Empresa atualizada.");
@@ -149,7 +162,7 @@ export function EditOrganizationDialog({
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Não deu para salvar."),
   });
-  const valid = name.trim().length >= 2 && Number(seats) >= 1 && Number(goal) >= 1 && Number(goal) <= 14;
+  const valid = name.trim().length >= 2 && Number(seats) >= 1 && Number(goal) >= 1 && Number(goal) <= 14 && partner.trim().length <= 80;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -162,6 +175,25 @@ export function EditOrganizationDialog({
           <div className="space-y-2">
             <Label htmlFor="e-name">Nome</Label>
             <Input id="e-name" value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Tipo</Label>
+              <Select value={kind} onValueChange={(v) => setKind(v as OrgKind)}>
+                <SelectTrigger aria-label="Tipo"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(["COMPANY", "GROUP"] as const).map((k) => (
+                    <SelectItem key={k} value={k}>{KIND_LABEL[k]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-muted-foreground text-xs">{kind === "GROUP" ? "Turma não vira Premium: os cenários dela abrem sem gastar a cota." : "O time treina como Premium até a validade."}</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="e-partner">Parceiro (método)</Label>
+              <Input id="e-partner" value={partner} maxLength={80} onChange={(e) => setPartner(e.target.value)} placeholder="Sem parceiro" />
+              <p className="text-muted-foreground text-xs">Vazio tira o parceiro do certificado.</p>
+            </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
@@ -191,6 +223,114 @@ export function EditOrganizationDialog({
             {mutation.isPending && <Loader2 className="size-4 animate-spin" />}
             Salvar
           </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * Copiar os cenários ativos de outra empresa (o método do parceiro). Rascunho por
+ * padrão, para o gestor revisar e publicar; o que já existe com o mesmo título é pulado.
+ */
+export function CopyScenariosDialog({
+  org,
+  open,
+  onOpenChange,
+  onCopied,
+}: {
+  org: AdminOrganizationDetail;
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  onCopied: () => void;
+}) {
+  const [sourceId, setSourceId] = useState("");
+  const [as, setAs] = useState<"DRAFT" | "ACTIVE">("DRAFT");
+  const [result, setResult] = useState<CopyScenariosResult | null>(null);
+
+  useEffect(() => {
+    if (open) { setSourceId(""); setAs("DRAFT"); setResult(null); }
+  }, [open]);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["organizations"],
+    queryFn: () => api.get<{ items: AdminOrganizationSummary[] }>("/admin/organizations"),
+    enabled: open,
+  });
+  const sources = (data?.items ?? []).filter((o) => o.id !== org.id);
+  const source = sources.find((o) => o.id === sourceId);
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      api.post<CopyScenariosResult>(`/admin/organizations/${org.id}/scenarios/copy-from/${sourceId}`, { activate: as === "ACTIVE" }),
+    onSuccess: (r) => {
+      setResult(r);
+      onCopied();
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Não deu para copiar os cenários."),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Copiar cenários para a {org.name}</DialogTitle>
+          <DialogDescription>
+            Traz os cenários ativos de outra empresa, com objetivos, régua e pessoas da sala. O que já existe aqui com o mesmo título fica de fora.
+          </DialogDescription>
+        </DialogHeader>
+
+        {result ? (
+          <p className="text-sm" role="status">{copyResultText(result)}</p>
+        ) : (
+          <form id="copiar-cenarios" className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (sourceId) mutation.mutate(); }}>
+            <div className="space-y-2">
+              <Label>Copiar de</Label>
+              <Select value={sourceId} onValueChange={setSourceId} disabled={isLoading}>
+                <SelectTrigger aria-label="Empresa de origem"><SelectValue placeholder={isLoading ? "Carregando…" : "Escolha a empresa"} /></SelectTrigger>
+                <SelectContent>
+                  {sources.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>
+                      {o.name} · {o.scenarios === 1 ? "1 cenário" : `${o.scenarios} cenários`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!isLoading && sources.length === 0 && <p className="text-muted-foreground text-xs">Não há outra empresa para copiar.</p>}
+            </div>
+            <div className="space-y-2">
+              <Label>Como chegam</Label>
+              <Select value={as} onValueChange={(v) => setAs(v as "DRAFT" | "ACTIVE")}>
+                <SelectTrigger aria-label="Como chegam"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="DRAFT">Como rascunho</SelectItem>
+                  <SelectItem value="ACTIVE">Já ativos</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-muted-foreground text-xs">
+                {as === "DRAFT" ? "O gestor revisa e publica no portal. O time só vê depois." : "O time já vê os cenários no app."}
+              </p>
+            </div>
+            {source && (
+              <p className="text-muted-foreground text-sm">
+                Vai copiar os cenários ativos da {source.name} para a {org.name}, {as === "DRAFT" ? "como rascunho" : "já ativos"}.
+              </p>
+            )}
+          </form>
+        )}
+
+        <DialogFooter>
+          {result ? (
+            <Button onClick={() => onOpenChange(false)}>Fechar</Button>
+          ) : (
+            <>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+              <Button type="submit" form="copiar-cenarios" disabled={!sourceId || mutation.isPending}>
+                {mutation.isPending && <Loader2 className="size-4 animate-spin" />}
+                Copiar cenários
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

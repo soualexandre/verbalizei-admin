@@ -4,10 +4,10 @@ import { OrgLogo } from "@/components/org-logo";
 import { use, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Copy, ExternalLink, Pencil, RefreshCw, UserPlus, UserMinus } from "lucide-react";
+import { ArrowLeft, Copy, CopyPlus, ExternalLink, Pencil, RefreshCw, UserPlus, UserMinus } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
-import { ROLE_LABEL, inviteUrl, validityText } from "@/lib/organizations";
+import { KIND_LABEL, ROLE_LABEL, inviteUrl, validityText } from "@/lib/organizations";
 import type { AdminOrganizationDetail, AdminOrganizationMember, OrgRole } from "@/lib/types";
 import { formatDate, formatDateTime, initials } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { fmt } from "@/components/dashboard/format";
-import { AddMemberDialog, EditOrganizationDialog } from "./dialogs";
+import { AddMemberDialog, CopyScenariosDialog, EditOrganizationDialog } from "./dialogs";
 
 type Pending =
   | { kind: "role"; member: AdminOrganizationMember; role: OrgRole }
@@ -35,6 +35,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
   const qc = useQueryClient();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [copying, setCopying] = useState(false);
   const [pending, setPending] = useState<Pending>(null);
   const { data: org, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["organizations", id],
@@ -78,7 +79,9 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
             org && (
               <span className="inline-flex flex-wrap items-center gap-2">
                 <OrgLogo id={org.id} name={org.name} logoVersion={org.logoVersion} decorative />
+                <Badge variant={org.kind === "GROUP" ? "outline" : "secondary"}>{KIND_LABEL[org.kind] ?? KIND_LABEL.COMPANY}</Badge>
                 <Badge variant={org.active ? "success" : org.status === "PAUSED" ? "secondary" : "warning"}>{validityText(org)}</Badge>
+                {org.partnerName && <span>Parceiro: {org.partnerName} ·</span>}
                 <span>Criada em {formatDate(org.createdAt)} · meta de {org.weeklyGoal} treinos por semana</span>
               </span>
             )
@@ -135,7 +138,13 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
             </Card>
           </Section>
 
-          <Section title="Cenários da empresa" description="Montados pelo gestor no editor do app e trazidos para o time no portal.">
+          <Section
+            title="Cenários da empresa"
+            description="Montados pelo gestor no editor do app e trazidos para o time no portal, ou copiados de outra empresa."
+            aside={
+              <Button variant="outline" onClick={() => setCopying(true)}><CopyPlus className="size-4" /> Copiar cenários de outra empresa</Button>
+            }
+          >
             <Card>
               <CardContent className="pt-6">
                 {org.scenarios.length === 0 ? (
@@ -145,7 +154,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
                     {org.scenarios.map((s) => (
                       <li key={s.id} className="flex items-center justify-between gap-3 py-2.5">
                         <span className="font-medium">{s.title}</span>
-                        <span className="text-muted-foreground text-xs">{s.status === "ACTIVE" ? "Ativo" : s.status} · {formatDate(s.createdAt)}</span>
+                        <span className="text-muted-foreground text-xs">{s.status === "ACTIVE" ? "Ativo" : s.status === "DRAFT" ? "Rascunho" : s.status} · {formatDate(s.createdAt)}</span>
                       </li>
                     ))}
                   </ul>
@@ -156,6 +165,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
 
           <AddMemberDialog org={org} open={adding} onOpenChange={setAdding} onSaved={refresh} />
           <EditOrganizationDialog org={org} open={editing} onOpenChange={setEditing} onSaved={refresh} />
+          <CopyScenariosDialog org={org} open={copying} onOpenChange={setCopying} onCopied={refresh} />
         </>
       )}
 

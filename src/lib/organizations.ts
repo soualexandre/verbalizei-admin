@@ -1,7 +1,36 @@
-import type { OrgPersonResult, OrgRole } from "@/lib/types";
+import type { CopyScenariosResult, OrgKind, OrgPersonResult, OrgRole } from "@/lib/types";
 
 /** Papéis na empresa, como o portal chama. */
 export const ROLE_LABEL: Record<OrgRole, string> = { OWNER: "Dono", MANAGER: "Gestor", MEMBER: "Atendente" };
+
+/** Empresa do Times ou turma de estudantes. */
+export const KIND_LABEL: Record<OrgKind, string> = { COMPANY: "Empresa", GROUP: "Turma" };
+
+/** Data de hoje + n dias, no formato do <input type="date">, no fuso de Brasília. */
+export function dateInputInDays(days: number, from: Date = new Date()): string {
+  return isoToDateInput(new Date(from.getTime() + days * 86_400_000).toISOString());
+}
+
+/** "3 cenários copiados da Clínica X como rascunho. 2 já existiam e ficaram de fora: A e B." */
+export function copyResultText(r: CopyScenariosResult): string {
+  const n = r.created.length;
+  const how = r.status === "ACTIVE" ? "já ativos" : "como rascunho";
+  const first =
+    n === 0
+      ? `Nenhum cenário novo veio da ${r.source.name}.`
+      : n === 1
+        ? `1 cenário copiado da ${r.source.name}, ${r.status === "ACTIVE" ? "já ativo" : "como rascunho"}.`
+        : `${n} cenários copiados da ${r.source.name}, ${how}.`;
+  const k = r.skipped.length;
+  if (k === 0) return first;
+  const titles = listText(r.skipped.map((s) => s.title));
+  return `${first} ${k === 1 ? "1 já existia e ficou de fora" : `${k} já existiam e ficaram de fora`}: ${titles}.`;
+}
+
+function listText(items: string[]): string {
+  if (items.length <= 1) return items.join("");
+  return `${items.slice(0, -1).join(", ")} e ${items[items.length - 1]}`;
+}
 
 /** O app de quem treina: o link de convite aponta para lá. */
 export const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.verbalizei.com.br").replace(/\/$/, "");

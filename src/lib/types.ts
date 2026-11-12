@@ -744,9 +744,15 @@ export interface ExperimentReport {
 export type OrgRole = "OWNER" | "MANAGER" | "MEMBER";
 export type OrgStatus = "ACTIVE" | "PAUSED";
 
+/** Empresa (Times) ou turma de estudantes (validade curta, sem Premium). */
+export type OrgKind = "COMPANY" | "GROUP";
+
 export interface AdminOrganizationSummary {
   id: string;
   name: string;
+  kind: OrgKind;
+  /** Método do parceiro que revende; nulo sem parceiro. */
+  partnerName: string | null;
   inviteCode: string;
   seats: number;
   seatsUsed: number;
@@ -776,6 +782,8 @@ export interface AdminOrganizationMember {
 export interface AdminOrganizationDetail {
   id: string;
   name: string;
+  kind: OrgKind;
+  partnerName: string | null;
   inviteCode: string;
   seats: number;
   seatsUsed: number;
@@ -788,6 +796,23 @@ export interface AdminOrganizationDetail {
   createdAt: string;
   members: AdminOrganizationMember[];
   scenarios: Array<{ id: string; title: string; status: string; createdAt: string }>;
+}
+
+/** Resposta de criar empresa: o id e, na turma, o desafio aberto (ou o motivo de não ter aberto). */
+export interface CreateOrganizationResult extends OrgPersonResult {
+  id: string;
+  inviteCode: string;
+  kind: OrgKind;
+  challengeId: string | null;
+  challengeError: string | null;
+}
+
+/** Resposta de copiar os cenários ativos de outra empresa. */
+export interface CopyScenariosResult {
+  source: { id: string; name: string };
+  status: "DRAFT" | "ACTIVE";
+  created: Array<{ id: string; title: string; sourceId: string }>;
+  skipped: Array<{ id: string; title: string; sourceId: string }>;
 }
 
 /** Resposta de criar empresa ou pôr alguém no time: o que a API fez por e-mail. */
