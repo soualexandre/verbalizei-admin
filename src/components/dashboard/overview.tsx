@@ -205,7 +205,7 @@ export function Overview({ data }: { data: DashboardOverview }) {
                 <ol className="divide-y">
                   {data.topScenarios.map((s, i) => (
                     <li key={s.id} className="flex items-center gap-3 py-2.5 text-sm">
-                      <span className="bg-green-100 text-primary flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums">{i + 1}</span>
+                      <span className="bg-brand-50 text-brand-ink flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums">{i + 1}</span>
                       <span className="min-w-0 flex-1 truncate" title={s.title}>
                         {s.title}
                       </span>

@@ -46,7 +46,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="items-center text-center">
           <BrandLogo priority className="mx-auto" />
-          <CardTitle className="mt-4 text-xl font-extrabold tracking-tight">Entrar no admin</CardTitle>
+          <CardTitle className="mt-4 text-base font-bold tracking-tight">Entrar no admin</CardTitle>
           <CardDescription>
             Entre com sua conta de administrador
           </CardDescription>

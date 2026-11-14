@@ -162,7 +162,7 @@ export default function CompanyInquiriesPage() {
                   setOver(null);
                 }}
                 className={cn(
-                  "bg-muted/50 flex min-h-48 flex-col gap-3 rounded-2xl border border-transparent p-3 transition-colors",
+                  "bg-muted/50 flex min-h-48 flex-col gap-3 rounded-xl border border-transparent p-3 transition-colors",
                   isOver && "border-primary/50 bg-green-50",
                 )}
               >
@@ -251,7 +251,7 @@ function InquiryCard({
       onDragEnd={onDragEnd}
       aria-label={`${i.company}, ${i.teamSize}`}
       className={cn(
-        "bg-card cursor-grab rounded-xl border p-4 shadow-[0_1px_2px_rgb(23_33_15/0.06)] transition-[opacity,box-shadow] active:cursor-grabbing",
+        "bg-card cursor-grab rounded-xl border p-4 transition-[opacity,box-shadow] active:cursor-grabbing",
         "hover:shadow-[0_1px_2px_rgb(23_33_15/0.06),0_6px_16px_-8px_rgb(23_33_15/0.18)]",
         dragging && "opacity-40",
       )}

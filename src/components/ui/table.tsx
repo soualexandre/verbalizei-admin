@@ -6,7 +6,7 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
     <div className="relative w-full overflow-x-auto">
       <table
         data-slot="table"
-        className={cn("w-full caption-bottom text-sm", className)}
+        className={cn("w-full caption-bottom text-[13px]", className)}
         {...props}
       />
     </div>
@@ -19,7 +19,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
       data-slot="table-header"
       className={cn(
         // Cabeçalho numa faixa cinza de pontas arredondadas, sem linha (referência de 25/10/2026).
-        "[&_tr]:bg-muted [&_tr]:border-0 [&_tr]:hover:bg-muted [&_th:first-child]:rounded-l-xl [&_th:last-child]:rounded-r-xl",
+        "[&_tr]:bg-muted [&_tr]:border-0 [&_tr]:hover:bg-muted [&_th:first-child]:rounded-l-md [&_th:last-child]:rounded-r-md",
         className,
       )}
       {...props}
@@ -42,7 +42,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
     <tr
       data-slot="table-row"
       className={cn(
-        "hover:bg-muted/45 data-[state=selected]:bg-green-50 border-b border-border/70 transition-colors",
+        "hover:bg-muted/50 data-[state=selected]:bg-brand-50 border-b border-border/70 transition-colors",
         className,
       )}
       {...props}
@@ -55,7 +55,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "text-muted-foreground h-10 px-3 text-left align-middle text-xs font-medium whitespace-nowrap",
+        "text-muted-foreground h-8 px-3 text-left align-middle text-[11px] font-medium whitespace-nowrap",
         className,
       )}
       {...props}
@@ -67,7 +67,7 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
   return (
     <td
       data-slot="table-cell"
-      className={cn("px-3 py-3.5 align-middle whitespace-nowrap", className)}
+      className={cn("px-3 py-2 align-middle whitespace-nowrap", className)}
       {...props}
     />
   );

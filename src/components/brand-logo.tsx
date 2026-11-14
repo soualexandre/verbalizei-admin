@@ -7,10 +7,10 @@ import { cn } from "@/lib/utils";
  */
 export function BrandLogo({ className, priority }: { className?: string; priority?: boolean }) {
   return (
-    <span className={cn("inline-flex items-center gap-2.5", className)}>
-      <Image src="/icone_admin.png" alt="" width={36} height={36} priority={priority} className="size-9" />
-      <span className="font-display text-[19px] font-extrabold tracking-tight">Verbalizei</span>
-      <span className="bg-green-100 text-primary rounded-full px-2 py-0.5 text-[11px] font-bold">Admin</span>
+    <span className={cn("inline-flex items-center gap-2", className)}>
+      <Image src="/icone_admin.png" alt="" width={28} height={28} priority={priority} className="size-7" />
+      <span className="font-display text-[15px] font-bold tracking-tight">Verbalizei</span>
+      <span className="bg-muted text-muted-foreground rounded px-1.5 py-px text-[10px] font-semibold">Admin</span>
     </span>
   );
 }

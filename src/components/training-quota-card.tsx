@@ -103,7 +103,7 @@ export function TrainingQuotaCard({ userId }: { userId: string }) {
         ) : (
           <>
             <QuotaStatus status={data.status} />
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-4 lg:grid-cols-2">
               <UsageList usages={data.usages} currentPeriodKey={data.status.periodKey} />
               <GrantList grants={data.grants} currentPeriodKey={data.status.periodKey} />
             </div>
@@ -149,7 +149,7 @@ function QuotaStatus({ status }: { status: TrainingQuotaStatus }) {
     <div className="space-y-3">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-2xl font-semibold tracking-tight">
+          <p className="text-lg font-semibold tracking-tight">
             {status.used}
             <span className="text-muted-foreground text-base font-normal">
               {" "}

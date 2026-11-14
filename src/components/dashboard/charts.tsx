@@ -24,14 +24,14 @@ import { fmt, KINDS, shortDay } from "./format";
 type Daily = DashboardOverview["daily"];
 
 const AXIS = { fontSize: 12, fill: "var(--muted-foreground)" };
-const HEIGHT = 220;
+const HEIGHT = 180;
 
 /** Em 30 e 90 dias, nem todo dia ganha rótulo no eixo. */
 const tickGap = (n: number) => (n <= 7 ? 0 : n <= 31 ? 4 : 13);
 
 function Frame({ children }: { children: React.ReactElement }) {
   return (
-    <div className="h-[220px] w-full">
+    <div className="h-[180px] w-full">
       <ResponsiveContainer width="100%" height={HEIGHT}>
         {children}
       </ResponsiveContainer>
@@ -63,7 +63,7 @@ export function ActiveUsersChart({ daily, onSelectDay }: { daily: Daily; onSelec
     <Frame>
       <AreaChart
         data={daily}
-        margin={{ top: 8, right: 8, bottom: 0, left: -16 }}
+        margin={{ top: 8, right: 8, bottom: 0, left: -4 }}
         className={onSelectDay ? "cursor-pointer" : undefined}
         onClick={(state) => {
           const day = state?.activeLabel;
@@ -117,7 +117,7 @@ const USERS_COLOR = "var(--foreground)";
 export function InteractionsChart({ daily }: { daily: Daily }) {
   return (
     <Frame>
-      <ComposedChart data={daily} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+      <ComposedChart data={daily} margin={{ top: 8, right: 8, bottom: 0, left: -4 }}>
         <CartesianGrid vertical={false} stroke="var(--border)" />
         <XAxis dataKey="day" tickFormatter={shortDay} tick={AXIS} tickLine={false} axisLine={false} interval={tickGap(daily.length)} />
         <YAxis allowDecimals={false} tick={AXIS} tickLine={false} axisLine={false} width={40} />
@@ -203,7 +203,7 @@ export function HourlyChart({ hourly }: { hourly: Hourly }) {
   const peak = Math.max(0, ...hourly.map((h) => h.interactions));
   return (
     <Frame>
-      <BarChart data={hourly} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+      <BarChart data={hourly} margin={{ top: 8, right: 8, bottom: 0, left: -4 }}>
         <CartesianGrid vertical={false} stroke="var(--border)" />
         <XAxis dataKey="hour" tickFormatter={hourLabel} tick={AXIS} tickLine={false} axisLine={false} interval={2} />
         <YAxis allowDecimals={false} tick={AXIS} tickLine={false} axisLine={false} width={40} />
@@ -246,7 +246,7 @@ export function WeekdayChart({ weekday }: { weekday: Weekday }) {
   const data = weekday.map((d) => ({ ...d, label: WEEKDAY_SHORT[d.weekday - 1] }));
   return (
     <Frame>
-      <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+      <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -4 }}>
         <CartesianGrid vertical={false} stroke="var(--border)" />
         <XAxis dataKey="label" tick={AXIS} tickLine={false} axisLine={false} />
         <YAxis allowDecimals tick={AXIS} tickLine={false} axisLine={false} width={40} />
@@ -427,7 +427,7 @@ export function KindDonut({ byKind }: { byKind: ByKind }) {
         )}
         {total > 0 && (
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-            <span className="font-display text-2xl font-extrabold leading-none tabular-nums">{fmt(total)}</span>
+            <span className="font-display text-lg font-bold leading-none tabular-nums">{fmt(total)}</span>
             <span className="text-muted-foreground mt-1 text-xs">treinos</span>
           </div>
         )}

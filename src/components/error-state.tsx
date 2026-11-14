@@ -30,7 +30,7 @@ export function ErrorState({
   const detail = error instanceof Error && error.message ? error.message.replace(/\.?$/, ".") : null;
   const body = (
     <div role="alert" className={cn("flex flex-col items-start gap-4 sm:flex-row sm:items-center", bare && className)}>
-      <span className="bg-green-100 text-primary flex size-11 shrink-0 items-center justify-center rounded-full">
+      <span className="bg-brand-50 text-brand-ink flex size-9 shrink-0 items-center justify-center rounded-full">
         <AlertCircle className="size-5" aria-hidden />
       </span>
       <div className="min-w-0 flex-1 space-y-1">
@@ -49,5 +49,5 @@ export function ErrorState({
     </div>
   );
   if (bare) return body;
-  return <Card className={cn("px-6 py-6 shadow-none", className)}>{body}</Card>;
+  return <Card className={cn("px-6 py-4 shadow-none", className)}>{body}</Card>;
 }

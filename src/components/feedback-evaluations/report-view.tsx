@@ -53,7 +53,7 @@ export function ReportView({ data, onOpenEvaluation }: { data: ReportResponse; o
       )}
       <ClarityCard report={r} />
       <AgreementSection report={r} />
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         <CalibrationCard report={r} />
         <SelfAssessmentCard report={r} />
       </div>
@@ -421,7 +421,7 @@ function AgreementSection({ report: r }: { report: EvaluationReport }) {
             )}
           />
         </div>
-        <div className="grid gap-6 xl:grid-cols-2">
+        <div className="grid gap-4 xl:grid-cols-2">
           <div className="space-y-2">
             <h3 className="text-sm font-semibold">Por fonte</h3>
             <DirectionTable cells={r.bySource} label={(c) => c.key} first="Fonte" />
@@ -689,7 +689,7 @@ function Quotes({ quotes, onOpen }: { quotes: QuotedComment[]; onOpen: OpenEvalu
 
 function PhrasesAndTexts({ report: r, onOpenEvaluation }: { report: EvaluationReport; onOpenEvaluation: OpenEvaluation }) {
   return (
-    <div className="grid gap-6 xl:grid-cols-2">
+    <div className="grid gap-4 xl:grid-cols-2">
       <Section title="Frases do catálogo que mais erram" description="A partir de 3 respostas, da menor concordância.">
         {!r.worstPhrases.length ? (
           <Empty>Nenhuma frase com 3 ou mais respostas e erro no recorte.</Empty>
@@ -751,7 +751,7 @@ function PhrasesAndTexts({ report: r, onOpenEvaluation }: { report: EvaluationRe
 function ReasonsSection({ report: r, onOpenEvaluation }: { report: EvaluationReport; onOpenEvaluation: OpenEvaluation }) {
   return (
     <>
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid gap-4 xl:grid-cols-2">
         <Section
           title="Transcrição"
           description={`${r.transcript.flagged} marcaram a transcrição como errada; ${r.transcript.reasonCount} citaram “transcrição errou” como motivo.`}

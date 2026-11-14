@@ -172,7 +172,7 @@ function ChartCard({
         {!has ? (
           <p className="text-muted-foreground text-sm">Sem esta medida nas análises.</p>
         ) : (
-          <div className="h-[220px] w-full">
+          <div className="h-[180px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 4 }}>
                 <CartesianGrid vertical={false} stroke="var(--border)" />

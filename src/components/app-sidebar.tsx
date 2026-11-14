@@ -14,6 +14,7 @@ import {
   EnvelopeSimple,
   Funnel,
   ChatCircleText,
+  CurrencyDollar,
   Fingerprint,
   Flask,
   Gauge,
@@ -30,6 +31,7 @@ import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BrandLogo } from "@/components/brand-logo";
+import { NotificationBell } from "@/components/notification-bell";
 
 interface NavItem {
   href: string;
@@ -80,6 +82,7 @@ const GROUPS: { key: string; label: string; items: NavItem[] }[] = [
       { href: "/dashboard", label: "Visão geral", icon: SquaresFour },
       { href: "/activation", label: "Ativação", icon: Funnel },
       { href: "/experiments", label: "Experimentos", icon: Flask },
+      { href: "/billing", label: "Custos", icon: CurrencyDollar },
       { href: "/profiles", label: "Perfis", icon: Fingerprint },
       { href: "/feedback-evaluations", label: "Avaliações de feedback", icon: ChatCircleText },
     ],
@@ -132,28 +135,31 @@ export function AppSidebar() {
 
   return (
     <>
-      <aside className="bg-sidebar text-sidebar-foreground border-sidebar-border sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r md:flex">
-        <NavContent newInquiries={newInquiries} />
+      <aside className="bg-sidebar text-sidebar-foreground border-sidebar-border sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r md:flex">
+        <NavContent newInquiries={newInquiries} bell />
       </aside>
 
-      <header className="bg-background/90 sticky top-0 z-30 flex h-14 items-center justify-between border-b px-4 backdrop-blur md:hidden">
+      <header className="bg-card/90 sticky top-0 z-30 flex h-12 items-center justify-between border-b px-4 backdrop-blur md:hidden">
         <Link href="/dashboard" aria-label="Ir para a visão geral">
           <BrandLogo priority />
         </Link>
+        <div className="flex items-center gap-1">
+        <NotificationBell inquiries={newInquiries} />
         <button
           type="button"
           onClick={() => setDrawer(true)}
           aria-label="Abrir o menu"
           aria-expanded={drawer}
-          className="hover:bg-card flex size-10 items-center justify-center rounded-xl"
+          className="hover:bg-muted flex size-9 items-center justify-center rounded-lg"
         >
-          <List className="size-6" aria-hidden />
+          <List className="size-5" aria-hidden />
         </button>
+        </div>
       </header>
       {drawer && (
         <div className="fixed inset-0 z-40 md:hidden" role="dialog" aria-modal="true" aria-label="Menu">
           <button type="button" aria-label="Fechar o menu" onClick={() => setDrawer(false)} className="absolute inset-0 bg-black/30" />
-          <div className="bg-sidebar animate-in slide-in-from-left absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col shadow-xl duration-200">
+          <div className="bg-sidebar animate-in slide-in-from-left absolute inset-y-0 left-0 flex w-64 max-w-[85vw] flex-col shadow-xl duration-200">
             <button
               type="button"
               onClick={() => setDrawer(false)}
@@ -170,7 +176,7 @@ export function AppSidebar() {
   );
 }
 
-function NavContent({ newInquiries }: { newInquiries: number }) {
+function NavContent({ newInquiries, bell = false }: { newInquiries: number; bell?: boolean }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   // Grupos fechados à mão (guardado no navegador; falhar ao ler = tudo aberto).
@@ -197,14 +203,15 @@ function NavContent({ newInquiries }: { newInquiries: number }) {
 
   return (
     <>
-      <div className="shrink-0 px-5 pt-4">
-        <Link href="/dashboard" className="flex h-14 w-fit items-center" aria-label="Ir para a visão geral">
+      <div className="flex shrink-0 items-center justify-between gap-2 pr-2.5 pl-4 pt-3">
+        <Link href="/dashboard" className="flex h-10 w-fit items-center" aria-label="Ir para a visão geral">
           <BrandLogo />
         </Link>
+        {bell && <NotificationBell inquiries={newInquiries} />}
       </div>
 
-      <nav aria-label="Navegação do admin" className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pt-4 pb-4">
-        <div className="flex flex-col gap-5">
+      <nav aria-label="Navegação do admin" className="flex min-h-0 flex-1 flex-col overflow-y-auto px-2.5 pt-3 pb-3">
+        <div className="flex flex-col gap-4">
           {GROUPS.map((group) => {
             const hasActive = group.items.some((i) => isActive(pathname, i.href));
             const open = hasActive || !collapsed.includes(group.key);
@@ -219,14 +226,14 @@ function NavContent({ newInquiries }: { newInquiries: number }) {
                   aria-disabled={hasActive}
                   title={hasActive ? "O grupo da tela atual fica aberto" : undefined}
                   className={cn(
-                    "text-muted-foreground flex h-8 w-full items-center justify-between rounded-lg px-3 text-[11px] font-semibold uppercase tracking-[0.08em] outline-none",
+                    "text-muted-foreground/80 flex h-6 w-full items-center justify-between rounded-md px-2 text-[10.5px] font-semibold uppercase tracking-[0.06em] outline-none",
                     "focus-visible:ring-ring focus-visible:ring-2",
                     !hasActive && "hover:text-foreground cursor-pointer",
                   )}
                 >
                   <span className="flex items-center gap-2">
                     {group.label}
-                    {!open && <span className="bg-card rounded-full px-1.5 text-[10px] tabular-nums">{group.items.length}</span>}
+                    {!open && <span className="bg-muted rounded-full px-1.5 text-[10px] tabular-nums">{group.items.length}</span>}
                   </span>
                   {!hasActive && (
                     <CaretDown
@@ -237,7 +244,7 @@ function NavContent({ newInquiries }: { newInquiries: number }) {
                   )}
                 </button>
                 {open && (
-                  <ul id={listId} className="mt-1 flex flex-col gap-1">
+                  <ul id={listId} className="mt-0.5 flex flex-col gap-px">
                     {group.items.map((item) => (
                       <li key={item.href}>
                         <NavLink {...item} active={isActive(pathname, item.href)} count={item.href === INQUIRIES_HREF ? newInquiries : 0} />
@@ -251,22 +258,22 @@ function NavContent({ newInquiries }: { newInquiries: number }) {
         </div>
 
         <div className="mt-auto pt-4">
-          <div className="bg-card flex items-center gap-3 rounded-2xl border px-3 py-2.5">
-            <Avatar className="size-9">
+          <div className="flex items-center gap-2.5 border-t px-2 pt-3 pb-1">
+            <Avatar className="size-7">
               {user?.avatarUrl && <AvatarImage src={user.avatarUrl} alt="" />}
-              <AvatarFallback className="bg-green-100 text-primary font-semibold">{initials(user?.name, user?.email)}</AvatarFallback>
+              <AvatarFallback className="bg-brand-50 text-brand-ink text-[11px] font-semibold">{initials(user?.name, user?.email)}</AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1 leading-tight">
-              <p className="truncate text-sm font-semibold">{user?.name || "Admin"}</p>
-              <p className="text-muted-foreground truncate text-xs">{user?.email}</p>
+              <p className="truncate text-[13px] font-medium">{user?.name || "Admin"}</p>
+              <p className="text-muted-foreground truncate text-[11px]">{user?.email}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={logout}
-            className="text-muted-foreground hover:text-foreground hover:bg-card/70 mt-1 flex h-11 w-full items-center gap-3 rounded-xl px-3 text-[15px] font-medium transition-colors"
+            className="text-muted-foreground hover:text-foreground hover:bg-muted mt-1 flex h-8 w-full items-center gap-2.5 rounded-md px-2 text-[13px] font-medium transition-colors"
           >
-            <SignOut className="size-[22px]" aria-hidden />
+            <SignOut className="size-[18px]" aria-hidden />
             Sair
           </button>
         </div>
@@ -281,25 +288,25 @@ function NavLink({ href, label, icon: Icon, active, count = 0 }: { href: string;
       href={href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "group flex h-11 items-center gap-3 rounded-xl px-3 text-[15px] outline-none",
+        "group flex h-8 items-center gap-2.5 rounded-md px-2 text-[13px] outline-none",
         "transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.98]",
-        "focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2",
+        "focus-visible:ring-ring focus-visible:ring-2",
         active
-          ? "bg-card text-foreground font-semibold shadow-[0_1px_2px_rgb(23_33_15/0.06),0_4px_12px_-6px_rgb(23_33_15/0.12)]"
-          : "text-muted-foreground hover:text-foreground hover:bg-card/70 font-medium",
+          ? "bg-brand-50 text-brand-ink font-semibold"
+          : "text-muted-foreground hover:text-foreground hover:bg-muted font-medium",
       )}
     >
       <Icon
         className={cn(
-          "size-[22px] shrink-0 transition-colors duration-150",
-          active ? "text-primary" : "text-muted-foreground/80 group-hover:text-muted-foreground",
+          "size-[18px] shrink-0 transition-colors duration-150",
+          active ? "text-brand" : "text-muted-foreground/80 group-hover:text-muted-foreground",
         )}
         weight={active ? "fill" : "regular"}
         aria-hidden
       />
       <span className="truncate">{label}</span>
       {count > 0 && (
-        <span className="bg-primary text-primary-foreground ml-auto rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums">
+        <span className="bg-brand text-white ml-auto rounded-full px-1.5 py-px text-[10px] font-semibold tabular-nums">
           {count}
           <span className="sr-only"> {count === 1 ? "novo" : "novos"}</span>
         </span>

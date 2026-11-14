@@ -144,7 +144,7 @@ export function EvaluationReportTab({
 
       {generate.isPending ? (
         <Card>
-          <CardContent className="space-y-4 py-6">
+          <CardContent className="space-y-4 py-4">
             <p className="text-muted-foreground flex items-center gap-2 text-sm">
               {generate.variables?.ai ? <Sparkles className="size-4" /> : <Loader2 className="size-4 animate-spin" />}
               {generate.variables?.ai
@@ -157,7 +157,7 @@ export function EvaluationReportTab({
         </Card>
       ) : generate.isError && !data ? (
         <Card>
-          <CardContent className="flex items-center justify-between gap-4 py-6">
+          <CardContent className="flex items-center justify-between gap-4 py-4">
             <p className="text-destructive text-sm">{generate.error.message}</p>
             <Button variant="outline" size="sm" onClick={run}>
               Tentar de novo

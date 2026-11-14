@@ -259,11 +259,11 @@ function Report({ data }: { data: ActivationReport }) {
         <Card className="shadow-none">
           <CardContent className="pt-6">
             {gaps.length ? (
-              <ol className="grid gap-6 lg:grid-cols-3 lg:gap-8">
+              <ol className="grid gap-4 lg:grid-cols-3 lg:gap-6">
                 {gaps.map((g, i) => (
                   <li key={g.to} className="flex gap-3">
                     <span
-                      className="bg-green-100 text-primary flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums"
+                      className="bg-brand-50 text-brand-ink flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums"
                       aria-label={`${i + 1}ª maior perda`}
                     >
                       {i + 1}
@@ -273,7 +273,7 @@ function Report({ data }: { data: ActivationReport }) {
                         {g.from} → {g.to}
                       </p>
                       <p className="text-sm tabular-nums">
-                        <span className="font-display text-xl font-bold">{fmt(g.lost)}</span>{" "}
+                        <span className="font-display text-base font-bold">{fmt(g.lost)}</span>{" "}
                         <span className="text-muted-foreground">pessoas ficaram ({g.lostShare == null ? "—" : fmtPct(g.lostShare)} de quem chegou)</span>
                       </p>
                       {g.fix && <p className="text-sm leading-relaxed">{g.fix}</p>}
@@ -303,7 +303,7 @@ function Report({ data }: { data: ActivationReport }) {
                 <ul className="divide-y">
                   {data.stuckAt.map((s) => (
                     <li key={s.stage} className="flex gap-4 py-3 text-sm">
-                      <span className="font-display w-10 shrink-0 text-right text-lg font-bold tabular-nums">{fmt(s.people)}</span>
+                      <span className="font-display w-10 shrink-0 text-right text-base font-bold tabular-nums">{fmt(s.people)}</span>
                       <span className="min-w-0">
                         <span className="block font-medium">Parou depois de: {s.stage.toLowerCase()}</span>
                         <span className="text-muted-foreground block">{s.action}</span>
@@ -504,7 +504,7 @@ function NorthStarSection({ data }: { data: ActivationReport }) {
             {items.map((i) => (
               <div key={i.label} className="space-y-1">
                 <dt className="text-muted-foreground text-sm">{i.label}</dt>
-                <dd className="font-display text-2xl font-bold tabular-nums">{i.value}</dd>
+                <dd className="font-display text-base font-bold tabular-nums">{i.value}</dd>
                 <dd className="text-muted-foreground text-sm">{i.note}</dd>
               </div>
             ))}

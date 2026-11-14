@@ -473,9 +473,9 @@ function EvaluationList({ onReport }: { onReport: (person: ReportPerson) => void
               ))}
             </div>
           ) : isError ? (
-            <p className="text-destructive p-6 text-sm">{(error as Error).message}</p>
+            <p className="text-destructive p-4 text-sm">{(error as Error).message}</p>
           ) : !data?.items.length ? (
-            <p className="text-muted-foreground p-6 text-sm">Nenhuma avaliação com esses filtros.</p>
+            <p className="text-muted-foreground p-4 text-sm">Nenhuma avaliação com esses filtros.</p>
           ) : (
             <Table>
               <TableHeader>

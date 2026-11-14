@@ -148,7 +148,7 @@ export default function ProfilesPage() {
               </Tabs>
             </div>
 
-            <div className="grid items-start gap-6 min-[1400px]:grid-cols-[minmax(0,1fr)_19rem]">
+            <div className="grid items-start gap-4 min-[1400px]:grid-cols-[minmax(0,1fr)_19rem]">
               <div className="min-w-0 space-y-6">
                 <Card className="gap-4 shadow-none">
                   <CardHeader>
@@ -159,7 +159,7 @@ export default function ProfilesPage() {
                       comparar e abra &ldquo;Ver respostas&rdquo; para ler o que cada grupo escreveu.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4 px-3 sm:px-6">
+                  <CardContent className="space-y-4 px-3 sm:px-4">
                     <ProfileHeatmap
                       dimension={dimension}
                       analysis={data}
@@ -221,7 +221,7 @@ export default function ProfilesPage() {
               <CardContent className="space-y-3">
                 {verdict ? (
                   <>
-                    <p className="font-display max-w-4xl text-2xl leading-tight font-bold tracking-tight text-balance sm:text-[1.75rem]">
+                    <p className="font-display max-w-4xl text-lg leading-tight font-bold tracking-tight text-balance sm:text-xl">
                       {verdict.headline}
                     </p>
                     <p className="max-w-3xl text-base leading-relaxed text-pretty">
@@ -239,7 +239,7 @@ export default function ProfilesPage() {
                     )}
                   </>
                 ) : (
-                  <p className="font-display text-xl font-bold tracking-tight">
+                  <p className="font-display text-base font-bold tracking-tight">
                     Ainda não há usuários para analisar
                   </p>
                 )}
@@ -351,7 +351,7 @@ function LoadingState() {
   return (
     <div className="space-y-6" aria-busy="true" aria-label="Carregando análise de perfis">
       <Skeleton className="h-9 w-full max-w-2xl" />
-      <div className="grid gap-6 min-[1400px]:grid-cols-[minmax(0,1fr)_19rem]">
+      <div className="grid gap-4 min-[1400px]:grid-cols-[minmax(0,1fr)_19rem]">
         <Skeleton className="h-[28rem]" />
         <Skeleton className="h-[28rem]" />
       </div>
