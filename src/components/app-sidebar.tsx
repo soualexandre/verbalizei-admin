@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   Barbell,
   Buildings,
   List,
   X,
   CaretDown,
+  EnvelopeSimple,
   Funnel,
   ChatCircleText,
   Fingerprint,
@@ -24,6 +27,7 @@ import {
 } from "@phosphor-icons/react";
 import { cn, initials } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
+import { api } from "@/lib/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BrandLogo } from "@/components/brand-logo";
 
@@ -31,6 +35,36 @@ interface NavItem {
   href: string;
   label: string;
   icon: Icon;
+}
+
+const INQUIRIES_HREF = "/company-inquiries";
+
+/**
+ * Pedidos de empresas ainda sem resposta: o selo no menu e um aviso quando
+ * chega um novo com o admin aberto (confere a cada minuto).
+ */
+function useNewInquiries(): number {
+  const router = useRouter();
+  const { data } = useQuery({
+    queryKey: ["company-inquiries", "new-count"],
+    queryFn: () => api.get<{ count: number }>("/admin/company-inquiries/new-count"),
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: true,
+  });
+  const count = data?.count ?? 0;
+  const last = useRef<number | null>(null);
+  useEffect(() => {
+    if (data === undefined) return;
+    if (last.current !== null && count > last.current) {
+      const n = count - last.current;
+      toast.info(n === 1 ? "Uma empresa pediu uma conversa pelo site." : `${n} empresas pediram uma conversa pelo site.`, {
+        action: { label: "Ver", onClick: () => router.push(INQUIRIES_HREF) },
+        duration: 15_000,
+      });
+    }
+    last.current = count;
+  }, [data, count, router]);
+  return count;
 }
 
 /**
@@ -56,6 +90,7 @@ const GROUPS: { key: string; label: string; items: NavItem[] }[] = [
     items: [
       { href: "/users", label: "Usuários", icon: Users },
       { href: "/organizations", label: "Empresas", icon: Buildings },
+      { href: INQUIRIES_HREF, label: "Contatos de empresas", icon: EnvelopeSimple },
       { href: "/training-quota", label: "Cota de treinos", icon: Gauge },
       { href: "/enrichment", label: "Enriquecimento", icon: MagicWand },
       { href: "/retention", label: "Retorno manual", icon: WhatsappLogo },
@@ -83,6 +118,8 @@ const isActive = (pathname: string, href: string) => pathname === href || pathna
  */
 export function AppSidebar() {
   const pathname = usePathname();
+  // Uma vez só (a gaveta do celular repete o menu): o aviso não sai em dobro.
+  const newInquiries = useNewInquiries();
   const [drawer, setDrawer] = useState(false);
   // Trocou de tela pela gaveta: fecha.
   useEffect(() => setDrawer(false), [pathname]);
@@ -96,7 +133,7 @@ export function AppSidebar() {
   return (
     <>
       <aside className="bg-sidebar text-sidebar-foreground border-sidebar-border sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r md:flex">
-        <NavContent />
+        <NavContent newInquiries={newInquiries} />
       </aside>
 
       <header className="bg-background/90 sticky top-0 z-30 flex h-14 items-center justify-between border-b px-4 backdrop-blur md:hidden">
@@ -125,7 +162,7 @@ export function AppSidebar() {
             >
               <X className="size-5" aria-hidden />
             </button>
-            <NavContent />
+            <NavContent newInquiries={newInquiries} />
           </div>
         </div>
       )}
@@ -133,7 +170,7 @@ export function AppSidebar() {
   );
 }
 
-function NavContent() {
+function NavContent({ newInquiries }: { newInquiries: number }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   // Grupos fechados à mão (guardado no navegador; falhar ao ler = tudo aberto).
@@ -203,7 +240,7 @@ function NavContent() {
                   <ul id={listId} className="mt-1 flex flex-col gap-1">
                     {group.items.map((item) => (
                       <li key={item.href}>
-                        <NavLink {...item} active={isActive(pathname, item.href)} />
+                        <NavLink {...item} active={isActive(pathname, item.href)} count={item.href === INQUIRIES_HREF ? newInquiries : 0} />
                       </li>
                     ))}
                   </ul>
@@ -238,7 +275,7 @@ function NavContent() {
   );
 }
 
-function NavLink({ href, label, icon: Icon, active }: { href: string; label: string; icon: Icon; active: boolean }) {
+function NavLink({ href, label, icon: Icon, active, count = 0 }: { href: string; label: string; icon: Icon; active: boolean; count?: number }) {
   return (
     <Link
       href={href}
@@ -261,6 +298,12 @@ function NavLink({ href, label, icon: Icon, active }: { href: string; label: str
         aria-hidden
       />
       <span className="truncate">{label}</span>
+      {count > 0 && (
+        <span className="bg-primary text-primary-foreground ml-auto rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums">
+          {count}
+          <span className="sr-only"> {count === 1 ? "novo" : "novos"}</span>
+        </span>
+      )}
     </Link>
   );
 }
