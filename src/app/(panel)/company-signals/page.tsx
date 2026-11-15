@@ -135,6 +135,16 @@ export default function CompanySignalsPage() {
   );
 }
 
+/** A mensagem de abordagem: a prova primeiro, depois a oferta do diagnóstico (sem nomes das pessoas). */
+function outreachMessage(o: OrgSignal): string {
+  return [
+    "Olá! Tudo bem?",
+    `Sou do Verbalizei, uma plataforma em que as pessoas treinam conversas difíceis com uma IA e recebem análise da fala. ${o.pitch.replace("da sua empresa", `da ${o.label}`)}`,
+    "Como o time já está usando por conta própria, queria oferecer um diagnóstico gratuito de 30 dias: o time treina nos cenários da empresa (vendas, atendimento, reuniões) e você acompanha num painel quem treinou, o padrão que cada um cumpre e a evolução da primeira semana para a última.",
+    "Topa uma conversa de 20 minutos esta semana?",
+  ].join("\n\n");
+}
+
 function OrgGrid({ items, onDiagnostic }: { items: OrgSignal[]; onDiagnostic?: (name: string) => void }) {
   return (
     <div className="grid items-start gap-4 lg:grid-cols-2">
@@ -148,8 +158,8 @@ function OrgGrid({ items, onDiagnostic }: { items: OrgSignal[]; onDiagnostic?: (
 function OrgCard({ org: o, onDiagnostic }: { org: OrgSignal; onDiagnostic?: (name: string) => void }) {
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(o.pitch);
-      toast.success("Frase copiada.");
+      await navigator.clipboard.writeText(outreachMessage(o));
+      toast.success("Mensagem para o gestor copiada.");
     } catch {
       toast.error("Não deu para copiar.");
     }
@@ -183,7 +193,7 @@ function OrgCard({ org: o, onDiagnostic }: { org: OrgSignal; onDiagnostic?: (nam
 
       <div className="bg-muted/60 mt-3 flex items-center justify-between gap-2 rounded-lg px-3 py-2">
         <p className="text-sm">{o.pitch}</p>
-        <Button variant="ghost" size="sm" onClick={copy} aria-label="Copiar a frase">
+        <Button variant="ghost" size="sm" onClick={copy} aria-label="Copiar a mensagem para o gestor" title="Copiar a mensagem para o gestor">
           <Copy className="size-4" aria-hidden />
         </Button>
       </div>
