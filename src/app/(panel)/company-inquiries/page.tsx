@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, EnvelopeSimple, Phone, WhatsappLogo } from "@phosphor-icons/react";
+import { ArrowLeft, ArrowRight, EnvelopeSimple, Phone, Trash, WhatsappLogo } from "@phosphor-icons/react";
 import { api } from "@/lib/api";
 import { cn, formatDateTime } from "@/lib/utils";
 import { ErrorState } from "@/components/error-state";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { HeroStat, HeroStats, HeroStatsSkeleton, PageHero } from "@/components/page-hero";
 import { fmt } from "@/components/dashboard/format";
 import { Button } from "@/components/ui/button";
@@ -235,6 +236,18 @@ function InquiryCard({
     },
     onError: (e: Error) => toast.error(`Não deu para salvar: ${e.message}`),
   });
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const remove = async () => {
+    try {
+      await api.delete(`/admin/company-inquiries/${i.id}`);
+      toast.success(`Contato da ${i.company} apagado.`);
+      qc.invalidateQueries({ queryKey: QUERY_KEY });
+      qc.invalidateQueries({ queryKey: ["company-inquiries", "new-count"] });
+    } catch (e) {
+      toast.error(`Não deu para apagar: ${e instanceof Error ? e.message : "erro"}`);
+      throw e;
+    }
+  };
   const origin = utmText(i.utm);
   const idx = ORDER.indexOf(i.status);
   const prev = idx > 0 ? COLUMNS[idx - 1] : null;
@@ -252,7 +265,7 @@ function InquiryCard({
       aria-label={`${i.company}, ${i.teamSize}`}
       className={cn(
         "bg-card cursor-grab rounded-xl border p-4 transition-[opacity,box-shadow] active:cursor-grabbing",
-        "hover:shadow-[0_1px_2px_rgb(23_33_15/0.06),0_6px_16px_-8px_rgb(23_33_15/0.18)]",
+        "hover:border-[#d5d9e0]",
         dragging && "opacity-40",
       )}
     >
@@ -333,6 +346,15 @@ function InquiryCard({
           {notesOpen ? "Fechar" : i.notes ? "Editar anotação" : "Anotar"}
         </button>
         <div className="flex gap-1">
+          <button
+            type="button"
+            onClick={() => setConfirmDelete(true)}
+            aria-label={`Apagar o contato da ${i.company}`}
+            title="Apagar contato"
+            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex size-7 items-center justify-center rounded-md transition-colors"
+          >
+            <Trash className="size-4" aria-hidden />
+          </button>
           {prev && (
             <button
               type="button"
@@ -357,6 +379,15 @@ function InquiryCard({
           )}
         </div>
       </div>
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title={`Apagar o contato da ${i.company}?`}
+        description="O pedido some do quadro e do banco, com a anotação. Não dá para desfazer."
+        confirmLabel="Apagar"
+        variant="destructive"
+        onConfirm={remove}
+      />
     </article>
   );
 }
