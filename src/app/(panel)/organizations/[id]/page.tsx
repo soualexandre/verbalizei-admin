@@ -7,7 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Copy, CopyPlus, ExternalLink, Pencil, RefreshCw, UserPlus, UserMinus } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
-import { KIND_LABEL, ROLE_LABEL, inviteUrl, validityText } from "@/lib/organizations";
+import { KIND_LABEL, ROLE_LABEL, inviteUrl, validityText, diagnosticText } from "@/lib/organizations";
 import type { AdminOrganizationDetail, AdminOrganizationMember, OrgRole } from "@/lib/types";
 import { formatDate, formatDateTime, initials } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -81,6 +81,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
                 <OrgLogo id={org.id} name={org.name} logoVersion={org.logoVersion} decorative />
                 <Badge variant={org.kind === "GROUP" ? "outline" : "secondary"}>{KIND_LABEL[org.kind] ?? KIND_LABEL.COMPANY}</Badge>
                 <Badge variant={org.active ? "success" : org.status === "PAUSED" ? "secondary" : "warning"}>{validityText(org)}</Badge>
+                {diagnosticText(org) && <Badge variant="outline">{diagnosticText(org)}</Badge>}
                 {org.partnerName && <span>Parceiro: {org.partnerName} ·</span>}
                 <span>Criada em {formatDate(org.createdAt)} · meta de {org.weeklyGoal} treinos por semana</span>
               </span>

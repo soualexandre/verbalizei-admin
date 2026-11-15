@@ -63,3 +63,15 @@ export function isoToDateInput(iso: string | null): string {
   if (!iso) return "";
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(iso));
 }
+
+/** "Diagnóstico · dia 12 de 30" ou "Diagnóstico encerrado"; null se não é diagnóstico. */
+export function diagnosticText(o: { diagnosticStartedAt?: string | null; activeUntil: string | null }, now = new Date()): string | null {
+  if (!o.diagnosticStartedAt) return null;
+  const DAY = 86_400_000;
+  const start = new Date(o.diagnosticStartedAt).getTime();
+  const end = o.activeUntil ? new Date(o.activeUntil).getTime() : start + 30 * DAY;
+  if (now.getTime() >= end) return "Diagnóstico encerrado";
+  const total = Math.max(1, Math.round((end - start) / DAY));
+  const day = Math.min(total, Math.floor((now.getTime() - start) / DAY) + 1);
+  return `Diagnóstico · dia ${day} de ${total}`;
+}

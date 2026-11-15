@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -12,6 +13,7 @@ import { fmt } from "@/components/dashboard/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { NewOrganizationDialog } from "../organizations/new-organization-dialog";
 
 interface OrgSignalMember {
   id: string;
@@ -31,6 +33,8 @@ interface OrgSignal {
   activeThisMonth: number;
   trainingsThisMonth: number;
   ready: boolean;
+  /** Pessoas com cargo de vendas ou atendimento. Ausente na API antiga. */
+  commercial?: number;
   pitch: string;
   client: { id: string; name: string } | null;
   latestAt: string;
@@ -63,12 +67,20 @@ export default function CompanySignalsPage() {
   const ready = prospects.filter((o) => o.ready);
   const watching = prospects.filter((o) => !o.ready);
   const clients = items.filter((o) => o.client);
+  // Começar diagnóstico: abre "Nova empresa" com o nome e o diagnóstico de 30 dias ligados.
+  const [diagnosticFor, setDiagnosticFor] = useState<string | null>(null);
 
   return (
     <div className="space-y-10">
+      <NewOrganizationDialog
+        open={diagnosticFor !== null}
+        onOpenChange={(o) => !o && setDiagnosticFor(null)}
+        initialName={diagnosticFor ?? ""}
+        initialDiagnostic
+      />
       <PageHero
         title="Sinal de empresas"
-        description="Pessoas da mesma empresa ou instituição usando o Verbalizei por conta própria. Juntamos pelo nome que escreveram no cadastro ou no perfil e pelo domínio do e-mail corporativo. Com 3 ou mais, aborde o gestor com a frase da prova e ofereça o piloto de 30 dias."
+        description="Pessoas da mesma empresa ou instituição usando o Verbalizei por conta própria. Juntamos pelo nome que escreveram no cadastro ou no perfil e pelo domínio do e-mail corporativo. Com 3 ou mais, aborde o gestor com a frase da prova e ofereça o diagnóstico gratuito de 30 dias. Times comerciais (vendas e atendimento) vêm primeiro."
       >
         {isLoading ? (
           <HeroStatsSkeleton count={4} />
@@ -104,12 +116,12 @@ export default function CompanySignalsPage() {
         <>
           {ready.length > 0 && (
             <Section title="Prontas para abordar" description="3 ou mais pessoas da mesma organização. Hora de falar com o gestor.">
-              <OrgGrid items={ready} />
+              <OrgGrid items={ready} onDiagnostic={setDiagnosticFor} />
             </Section>
           )}
           {watching.length > 0 && (
             <Section title="Em observação" description="2 pessoas da mesma organização. Com a terceira, vira oportunidade.">
-              <OrgGrid items={watching} />
+              <OrgGrid items={watching} onDiagnostic={setDiagnosticFor} />
             </Section>
           )}
           {clients.length > 0 && (
@@ -123,17 +135,17 @@ export default function CompanySignalsPage() {
   );
 }
 
-function OrgGrid({ items }: { items: OrgSignal[] }) {
+function OrgGrid({ items, onDiagnostic }: { items: OrgSignal[]; onDiagnostic?: (name: string) => void }) {
   return (
     <div className="grid items-start gap-4 lg:grid-cols-2">
       {items.map((o) => (
-        <OrgCard key={o.key} org={o} />
+        <OrgCard key={o.key} org={o} onDiagnostic={onDiagnostic} />
       ))}
     </div>
   );
 }
 
-function OrgCard({ org: o }: { org: OrgSignal }) {
+function OrgCard({ org: o, onDiagnostic }: { org: OrgSignal; onDiagnostic?: (name: string) => void }) {
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(o.pitch);
@@ -152,6 +164,7 @@ function OrgCard({ org: o }: { org: OrgSignal }) {
         <div className="min-w-0">
           <h3 className="flex items-center gap-2 truncate font-semibold">
             {o.label}
+            {!!o.commercial && <Badge>Comercial</Badge>}
             {o.client && (
               <Link href={`/organizations/${o.client.id}`}>
                 <Badge variant="secondary">Cliente</Badge>
@@ -174,6 +187,12 @@ function OrgCard({ org: o }: { org: OrgSignal }) {
           <Copy className="size-4" aria-hidden />
         </Button>
       </div>
+
+      {onDiagnostic && o.ready && (
+        <Button className="mt-3 w-full sm:w-auto" size="sm" onClick={() => onDiagnostic(o.label)}>
+          Começar diagnóstico de 30 dias
+        </Button>
+      )}
 
       <ul className="mt-3 divide-y">
         {members.map((m) => (

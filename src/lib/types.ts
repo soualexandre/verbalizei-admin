@@ -753,6 +753,8 @@ export interface AdminOrganizationSummary {
   kind: OrgKind;
   /** Método do parceiro que revende; nulo sem parceiro. */
   partnerName: string | null;
+  /** Diagnóstico gratuito de 30 dias: quando começou (null = não é). Ausente na API antiga. */
+  diagnosticStartedAt?: string | null;
   inviteCode: string;
   seats: number;
   seatsUsed: number;
@@ -784,6 +786,8 @@ export interface AdminOrganizationDetail {
   name: string;
   kind: OrgKind;
   partnerName: string | null;
+  /** Diagnóstico gratuito de 30 dias: quando começou (null = não é). Ausente na API antiga. */
+  diagnosticStartedAt?: string | null;
   inviteCode: string;
   seats: number;
   seatsUsed: number;

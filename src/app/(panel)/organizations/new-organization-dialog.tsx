@@ -45,10 +45,15 @@ export function NewOrganizationDialog({
   open,
   onOpenChange,
   initialMode = "COMPANY",
+  initialName = "",
+  initialDiagnostic = false,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   initialMode?: Mode;
+  /** Vindo do Sinal de empresas: o nome já preenchido e o diagnóstico ligado. */
+  initialName?: string;
+  initialDiagnostic?: boolean;
 }) {
   const router = useRouter();
   const qc = useQueryClient();
@@ -62,25 +67,34 @@ export function NewOrganizationDialog({
   const [partnerEmail, setPartnerEmail] = useState("");
   const [partnerContact, setPartnerContact] = useState("");
   const [challenge, setChallenge] = useState(true);
+  const [diagnostic, setDiagnostic] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setMode(initialMode);
-    setName("");
+    setName(initialName);
+    setDiagnostic(initialDiagnostic && initialMode === "COMPANY");
     setOwnerEmail("");
     setOwnerName("");
     setSeats("30");
-    setUntil(initialMode === "GROUP" ? dateInputInDays(14) : "");
+    setUntil(initialMode === "GROUP" ? dateInputInDays(14) : initialDiagnostic ? dateInputInDays(30) : "");
     setPartnerName("");
     setPartnerEmail("");
     setPartnerContact("");
     setChallenge(true);
-  }, [open, initialMode]);
+  }, [open, initialMode, initialName, initialDiagnostic]);
 
   const changeMode = (m: Mode) => {
     setMode(m);
     // Turma tem validade curta: sugere 14 dias, editável.
     if (m === "GROUP" && !until) setUntil(dateInputInDays(14));
+    if (m !== "COMPANY") setDiagnostic(false);
+  };
+
+  const toggleDiagnostic = (on: boolean) => {
+    setDiagnostic(on);
+    // O diagnóstico dura 30 dias: a validade acompanha (editável).
+    setUntil(on ? dateInputInDays(30) : "");
   };
 
   const isGroup = mode === "GROUP";
@@ -108,6 +122,7 @@ export function NewOrganizationDialog({
         kind: isGroup ? "GROUP" : "COMPANY",
         ...(partnerName.trim() && { partnerName: partnerName.trim() }),
         ...(isGroup && { challenge }),
+        ...(mode === "COMPANY" && diagnostic && { diagnostic: true }),
       });
       let partner: OrgPersonResult | null = null;
       let partnerError: string | null = null;
@@ -125,7 +140,7 @@ export function NewOrganizationDialog({
       return { created, partner, partnerError };
     },
     onSuccess: ({ created, partner, partnerError }) => {
-      const what = created.kind === "GROUP" ? "Turma criada." : "Empresa criada.";
+      const what = created.kind === "GROUP" ? "Turma criada." : diagnostic && mode === "COMPANY" ? "Diagnóstico de 30 dias aberto." : "Empresa criada.";
       const ownerWho = (isPartner && !clientEmail ? partnerContact.trim() : ownerName.trim()) || owner;
       toast.success(`${what} ${personToast(created, ownerWho, "OWNER")}`, { duration: 8000 });
       if (created.kind === "GROUP" && isGroup && challenge) {
@@ -250,6 +265,18 @@ export function NewOrganizationDialog({
               <Label htmlFor="org-partner">Parceiro (método)</Label>
               <Input id="org-partner" value={partnerName} maxLength={80} onChange={(e) => setPartnerName(e.target.value)} placeholder="Opcional" />
               <p className="text-muted-foreground text-xs">Se veio por uma escola, coach ou consultoria. Sai no certificado como &quot;Com método de …&quot;.</p>
+            </div>
+          )}
+
+          {mode === "COMPANY" && (
+            <div className="flex items-center justify-between rounded-md border p-3">
+              <div>
+                <Label htmlFor="org-diagnostic">Diagnóstico gratuito de 30 dias</Label>
+                <p className="text-muted-foreground text-xs">
+                  Plano da empresa por 30 dias, sem custo. No portal, o gestor acompanha o dia e, no fim, a primeira semana ao lado da mais recente.
+                </p>
+              </div>
+              <Switch id="org-diagnostic" checked={diagnostic} onCheckedChange={toggleDiagnostic} />
             </div>
           )}
 

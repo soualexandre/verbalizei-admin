@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { Handshake, Plus } from "lucide-react";
 import { api } from "@/lib/api";
-import { KIND_LABEL, validityText } from "@/lib/organizations";
+import { KIND_LABEL, validityText, diagnosticText } from "@/lib/organizations";
 import type { AdminOrganizationSummary } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import { ErrorState } from "@/components/error-state";
@@ -107,6 +107,7 @@ export default function OrganizationsPage() {
                           <div className="space-y-1">
                             <Badge variant={o.kind === "GROUP" ? "outline" : "secondary"}>{KIND_LABEL[o.kind] ?? KIND_LABEL.COMPANY}</Badge>
                             {o.partnerName && <p className="text-muted-foreground text-xs">Parceiro: {o.partnerName}</p>}
+                            {diagnosticText(o) && <p className="text-xs font-medium">{diagnosticText(o)}</p>}
                           </div>
                         </TableCell>
                         <TableCell>
