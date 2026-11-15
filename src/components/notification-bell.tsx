@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Bell, EnvelopeSimple, WarningCircle, Warning } from "@phosphor-icons/react";
+import { Bell, Buildings, EnvelopeSimple, WarningCircle, Warning } from "@phosphor-icons/react";
 import { api } from "@/lib/api";
 import type { BillingAlert } from "@/lib/billing";
 import { cn } from "@/lib/utils";
@@ -24,8 +24,9 @@ function readSeen(): string[] {
 }
 
 /**
- * O sininho (14/11/2026): cotas e orçamentos perto do fim ou estourados, e
- * pedidos de empresas sem resposta. Confere a cada 5 min. O que já foi visto
+ * O sininho (14/11/2026): cotas e orçamentos perto do fim ou estourados,
+ * pedidos de empresas sem resposta e, desde 15/11, organizações com 2+ pessoas
+ * usando (sinal de empresas; só aqui, sem e-mail nem push). Confere a cada 5 min. O que já foi visto
  * fica guardado no navegador; um aviso que piora (perto → estourou) volta
  * como novo, porque o id muda.
  */
@@ -92,13 +93,16 @@ export function NotificationBell({ inquiries = 0, className }: { inquiries?: num
           <ul className="max-h-80 divide-y overflow-y-auto">
             {alerts.map((a) => {
               const isNew = !seen.includes(a.id);
-              const Icon = a.level === "critical" ? WarningCircle : Warning;
+              const Icon = a.level === "critical" ? WarningCircle : a.level === "info" ? Buildings : Warning;
               return (
                 <li key={a.id}>
                   <Link href={a.href} className="hover:bg-muted/60 flex gap-2.5 px-3 py-2.5">
                     <Icon
                       weight="fill"
-                      className={cn("mt-0.5 size-4 shrink-0", a.level === "critical" ? "text-destructive" : "text-lime-600")}
+                      className={cn(
+                        "mt-0.5 size-4 shrink-0",
+                        a.level === "critical" ? "text-destructive" : a.level === "info" ? "text-brand" : "text-lime-600",
+                      )}
                       aria-hidden
                     />
                     <span className="min-w-0 flex-1">

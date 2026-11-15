@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import {
   Barbell,
   Buildings,
+  ChartLineUp,
   List,
   X,
   CaretDown,
@@ -94,6 +95,7 @@ const GROUPS: { key: string; label: string; items: NavItem[] }[] = [
       { href: "/users", label: "Usuários", icon: Users },
       { href: "/organizations", label: "Empresas", icon: Buildings },
       { href: INQUIRIES_HREF, label: "Contatos de empresas", icon: EnvelopeSimple },
+      { href: "/company-signals", label: "Sinal de empresas", icon: ChartLineUp },
       { href: "/training-quota", label: "Cota de treinos", icon: Gauge },
       { href: "/enrichment", label: "Enriquecimento", icon: MagicWand },
       { href: "/retention", label: "Retorno manual", icon: WhatsappLogo },

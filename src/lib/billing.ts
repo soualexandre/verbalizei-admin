@@ -32,7 +32,8 @@ export interface BillingItem {
 
 export interface BillingAlert {
   id: string;
-  level: "warning" | "critical";
+  /** "info" = sinal de empresas (2+ pessoas da mesma organização, 15/11/2026). */
+  level: "info" | "warning" | "critical";
   title: string;
   detail: string;
   href: string;
