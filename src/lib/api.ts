@@ -102,4 +102,13 @@ export const api = {
     fd.append("file", file);
     return apiFetch<T>(path, { method: "POST", body: fd, raw: true });
   },
+  /** Multipart com arquivo e campos de texto (vazios ficam de fora). */
+  postForm: <T>(path: string, fields: Record<string, string | Blob | null | undefined>) => {
+    const fd = new FormData();
+    for (const [k, v] of Object.entries(fields)) {
+      if (v === null || v === undefined || v === "") continue;
+      fd.append(k, v);
+    }
+    return apiFetch<T>(path, { method: "POST", body: fd, raw: true });
+  },
 };

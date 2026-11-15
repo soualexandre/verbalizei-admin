@@ -827,6 +827,48 @@ export interface OrgPersonResult {
   passwordEmailSent: boolean;
 }
 
+// ─── Contrato e nota fiscal da empresa (15/11/2026) ─
+
+/** Campos dos dados da nota fiscal, preenchidos pelo gestor no portal. */
+export type OrgBillingField = "legalName" | "taxId" | "billingEmail" | "billingAddress" | "municipalRegistration";
+
+/** GET /admin/organizations/:id/billing: dados da nota, preço combinado e situação do contrato. */
+export interface AdminOrgBilling {
+  legalName: string | null;
+  taxId: string | null;
+  billingEmail: string | null;
+  billingAddress: string | null;
+  municipalRegistration: string | null;
+  monthlyPriceCents: number | null;
+  /** O que falta para o aceite e a nota (a inscrição municipal é opcional). */
+  missing: OrgBillingField[];
+  contract: {
+    currentVersion: string;
+    acceptedVersion: string | null;
+    acceptedAt: string | null;
+    acceptedBy: string | null;
+    needsAcceptance: boolean;
+  };
+}
+
+export type OrgInvoiceStatus = "ISSUED" | "CANCELED";
+
+export interface OrgInvoice {
+  id: string;
+  number: string;
+  issuedAt: string;
+  amountCents: number;
+  description: string;
+  periodFrom: string | null;
+  periodTo: string | null;
+  status: OrgInvoiceStatus;
+}
+
+/** POST /admin/organizations/:id/invoices: a nota e se o aviso saiu para o e-mail da nota. */
+export interface CreatedOrgInvoice extends OrgInvoice {
+  emailed: boolean;
+}
+
 // ─── Evolução de uma pessoa (29/10/2026; ouvir as gravações saiu em 04/11/2026) ─
 
 export type RecordingKind = "TRAINING_ATTEMPT" | "LESSON_CHALLENGE" | "RECORDING" | "DRILL" | "MEETING";

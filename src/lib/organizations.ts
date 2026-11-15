@@ -1,4 +1,4 @@
-import type { CopyScenariosResult, OrgKind, OrgPersonResult, OrgRole } from "@/lib/types";
+import type { CopyScenariosResult, OrgBillingField, OrgKind, OrgPersonResult, OrgRole } from "@/lib/types";
 
 /** Papéis na empresa, como o portal chama. */
 export const ROLE_LABEL: Record<OrgRole, string> = { OWNER: "Dono", MANAGER: "Gestor", MEMBER: "Atendente" };
@@ -74,4 +74,53 @@ export function diagnosticText(o: { diagnosticStartedAt?: string | null; activeU
   const total = Math.max(1, Math.round((end - start) / DAY));
   const day = Math.min(total, Math.floor((now.getTime() - start) / DAY) + 1);
   return `Diagnóstico · dia ${day} de ${total}`;
+}
+
+/** Nomes dos dados da nota, como o portal chama. */
+export const BILLING_FIELD_LABEL: Record<OrgBillingField, string> = {
+  legalName: "Razão social",
+  taxId: "CNPJ",
+  billingEmail: "E-mail da nota",
+  billingAddress: "Endereço",
+  municipalRegistration: "Inscrição municipal",
+};
+
+/** "12345678000190" → "12.345.678/0001-90"; sem 14 dígitos, devolve como veio. */
+export function formatCnpj(v: string | null | undefined): string {
+  if (!v) return "";
+  const d = v.replace(/\D/g, "");
+  if (d.length !== 14) return v;
+  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
+}
+
+/** "990", "990,00", "1.234,5" ou "R$ 990" → centavos; vazio → null; inválido → NaN. */
+export function parseBrlToCents(v: string): number | null {
+  const s = v.replace(/R\$|\s/g, "");
+  if (!s) return null;
+  if (!/^(\d{1,3}(\.\d{3})+|\d+)(,\d{1,2})?$/.test(s)) return NaN;
+  const [int, dec = ""] = s.replace(/\./g, "").split(",");
+  return Number(int) * 100 + Number(dec.padEnd(2, "0"));
+}
+
+/** 99000 → "990,00" (para o campo). */
+export function centsToBrlInput(cents: number | null | undefined): string {
+  if (cents === null || cents === undefined) return "";
+  return (cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** 99000 → "R$ 990,00". */
+export function formatCents(cents: number): string {
+  return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+/** Data do <input type="date"> → ISO ao meio-dia de Brasília (não escorrega para o dia anterior). */
+export function dateInputToNoonIso(v: string): string {
+  return v ? `${v}T12:00:00-03:00` : "";
+}
+
+/** "Verbalizei Times – novembro/2026" (mês de Brasília). */
+export function defaultInvoiceDescription(d: Date = new Date()): string {
+  const month = new Intl.DateTimeFormat("pt-BR", { month: "long", timeZone: "America/Sao_Paulo" }).format(d);
+  const year = new Intl.DateTimeFormat("pt-BR", { year: "numeric", timeZone: "America/Sao_Paulo" }).format(d);
+  return `Verbalizei Times – ${month}/${year}`;
 }

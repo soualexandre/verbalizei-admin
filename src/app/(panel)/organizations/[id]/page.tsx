@@ -22,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { fmt } from "@/components/dashboard/format";
 import { AddMemberDialog, CopyScenariosDialog, EditOrganizationDialog } from "./dialogs";
+import { OrgBillingSection } from "./billing-section";
 
 type Pending =
   | { kind: "role"; member: AdminOrganizationMember; role: OrgRole }
@@ -163,6 +164,8 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
               </CardContent>
             </Card>
           </Section>
+
+          <OrgBillingSection orgId={org.id} orgName={org.name} />
 
           <AddMemberDialog org={org} open={adding} onOpenChange={setAdding} onSaved={refresh} />
           <EditOrganizationDialog org={org} open={editing} onOpenChange={setEditing} onSaved={refresh} />
