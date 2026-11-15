@@ -129,7 +129,24 @@ export function OrgBillingSection({ orgId, orgName }: { orgId: string; orgName: 
                             {inv.status === "CANCELED" ? "Cancelada" : "Emitida"}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right whitespace-nowrap">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={async () => {
+                              // Link assinado de 10 min; abre a aba antes do await para o bloqueador de pop-up não barrar.
+                              const tab = window.open("", "_blank");
+                              try {
+                                const { url } = await api.get<{ url: string }>(`/admin/organizations/${orgId}/invoices/${inv.id}/file`);
+                                if (tab) tab.location.href = url;
+                                else window.location.href = url;
+                              } catch {
+                                tab?.close();
+                              }
+                            }}
+                          >
+                            Baixar PDF
+                          </Button>
                           <Button variant="ghost" size="sm" onClick={() => setToggling(inv)}>
                             {inv.status === "CANCELED" ? "Reativar" : "Cancelar"}
                           </Button>
