@@ -1,4 +1,8 @@
-/** Painel de custos (GET /admin/billing, 14/11/2026). Valores em US$, estimados pelo uso registrado. */
+/**
+ * Painel de custos (GET /admin/billing, 14/11/2026). A API guarda e soma em
+ * US$ (como os provedores cobram) e manda a cotação em `exchange`; a tela
+ * mostra em real (15/11/2026, pedido do usuário).
+ */
 
 export type BillingStatus = "ok" | "near" | "over" | "unset";
 
@@ -51,6 +55,20 @@ export interface BillingOverview {
   byDay: { day: string; providers: Record<string, number> }[];
   topUsers: { userId: string; name: string | null; email: string | null; usd: number; calls: number }[];
   alerts: BillingAlert[];
+  /** Reais por dólar (PTAX do Banco Central, USD_BRL_RATE ou reserva). Ausente na API antiga. */
+  exchange?: { rate: number; date: string | null; source: "bcb" | "env" | "fallback" };
+}
+
+/** "R$ 1.234,56": o valor em dólar convertido pela cotação. */
+export const brl = (usdValue: number, rate: number, digits = 2) =>
+  `R$ ${(usdValue * rate).toLocaleString("pt-BR", { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+
+/** A cotação numa linha curta: "US$ 1 = R$ 5,65 (PTAX de 13/11)". */
+export function exchangeNote(x: NonNullable<BillingOverview["exchange"]>): string {
+  const rate = `US$ 1 = R$ ${x.rate.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (x.source === "bcb" && x.date) return `${rate} (PTAX de ${Number(x.date.slice(8))}/${Number(x.date.slice(5, 7))})`;
+  if (x.source === "env") return `${rate} (cotação fixa)`;
+  return `${rate} (reserva: o Banco Central não respondeu)`;
 }
 
 export const usd = (n: number, digits = 2) =>

@@ -9,8 +9,8 @@ import {
   compact,
   featureLabel,
   providerLabel,
+  exchangeNote,
   UNIT_LABEL,
-  usd,
   type BillingItem,
   type BillingOverview,
   type BillingStatus,
@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { ErrorState } from "@/components/error-state";
 import { HeroStat, HeroStats, HeroStatsSkeleton, PageHero, Section } from "@/components/page-hero";
 import { ItemDialog } from "@/components/billing/item-dialog";
+import { MoneyProvider, moneyFor, useMoney } from "@/components/billing/money";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,7 +27,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 /**
  * Custos (14/11/2026): tudo o que envolve billing num lugar só. O mês
- * corrente (Brasília), em US$: custos fixos da infraestrutura, o consumo das
+ * corrente (Brasília), em reais (convertidos do dólar pela cotação que a API
+ * manda, 15/11/2026): custos fixos da infraestrutura, o consumo das
  * APIs pagas com cota, orçamento e aviso, o gasto por dia e quem chama cada
  * API. O sininho do menu usa os mesmos avisos.
  */
@@ -56,16 +58,18 @@ export default function BillingPage() {
   });
   const [editing, setEditing] = useState<{ item: BillingItem | null; kind: "FIXED" | "USAGE" } | null>(null);
 
+  // A página está acima do próprio MoneyProvider: formata direto pela cotação.
+  const money = moneyFor(data?.exchange?.rate ?? null);
   const month = data ? MONTHS[Number(data.month.key.slice(5)) - 1] : null;
 
   return (
-    <>
+    <MoneyProvider rate={data?.exchange?.rate ?? null}>
       <PageHero
         title="Custos"
         description={
           data
-            ? `${month} até hoje (dia ${Math.ceil(data.month.elapsedDays)} de ${data.month.days}). Valores em US$, estimados pelo uso registrado.`
-            : "O mês corrente, em US$."
+            ? `${month} até hoje (dia ${Math.ceil(data.month.elapsedDays)} de ${data.month.days})${data.exchange ? `, em reais · ${exchangeNote(data.exchange)}` : ", em US$ (a API ainda não manda a cotação)"}`
+            : "O mês corrente, em reais."
         }
         actions={
           <Button size="sm" onClick={() => setEditing({ item: null, kind: "FIXED" })}>
@@ -126,7 +130,7 @@ export default function BillingPage() {
                     <span className="size-2 shrink-0 rounded-full" style={{ background: colorOf(p.provider) }} aria-hidden />
                     <span className="flex-1 font-medium">{providerLabel(p.provider)}</span>
                     <span className="text-muted-foreground tabular-nums">{p.calls.toLocaleString("pt-BR")} chamadas</span>
-                    <span className="w-20 text-right font-medium tabular-nums">{usd(p.usd)}</span>
+                    <span className="w-20 text-right font-medium tabular-nums">{money(p.usd)}</span>
                   </li>
                 ))}
               </ul>
@@ -165,7 +169,7 @@ export default function BillingPage() {
                         </TableCell>
                         <TableCell className="text-muted-foreground">{providerLabel(f.provider)}</TableCell>
                         <TableCell className="text-right tabular-nums">{f.calls.toLocaleString("pt-BR")}</TableCell>
-                        <TableCell className="text-right font-medium tabular-nums">{usd(f.usd)}</TableCell>
+                        <TableCell className="text-right font-medium tabular-nums">{money(f.usd)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -198,7 +202,7 @@ export default function BillingPage() {
                           </a>
                         </TableCell>
                         <TableCell className="text-right tabular-nums">{u.calls.toLocaleString("pt-BR")}</TableCell>
-                        <TableCell className="text-right font-medium tabular-nums">{usd(u.usd)}</TableCell>
+                        <TableCell className="text-right font-medium tabular-nums">{money(u.usd)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -227,7 +231,7 @@ export default function BillingPage() {
                     </span>
                     <span className="text-muted-foreground hidden sm:inline">{providerLabel(i.provider)}</span>
                     <span className={cn("w-24 text-right tabular-nums", i.spentUsd ? "font-medium" : "text-muted-foreground")}>
-                      {i.spentUsd ? usd(i.spentUsd) : "a preencher"}
+                      {i.spentUsd ? money(i.spentUsd) : "a preencher"}
                     </span>
                     <EditButton onClick={() => setEditing({ item: i, kind: "FIXED" })} label={i.name} />
                   </li>
@@ -246,35 +250,36 @@ export default function BillingPage() {
           kind={editing.kind}
         />
       )}
-    </>
+    </MoneyProvider>
   );
 }
 
 function Totals({ data }: { data: BillingOverview }) {
+  const money = useMoney();
   const t = data.totals;
   const prev = t.previousUsageUsd;
   const diff = prev > 0 ? Math.round(((t.usageForecastUsd - prev) / prev) * 100) : null;
   return (
     <HeroStats cols={4}>
-      <HeroStat label="Gasto no mês" value={usd(t.spentUsd)} note="Fixos + APIs até hoje" help="Custos fixos do mês somados ao consumo das APIs até agora." />
+      <HeroStat label="Gasto no mês" value={money(t.spentUsd)} note="Fixos + APIs até hoje" help="Custos fixos do mês somados ao consumo das APIs até agora." />
       <HeroStat
         label="Previsão do mês"
-        value={usd(t.forecastUsd)}
+        value={money(t.forecastUsd)}
         note="No ritmo atual"
         help="Fixos + consumo das APIs projetado pelo ritmo médio dos dias corridos."
       />
       <HeroStat
         label="APIs"
-        value={usd(t.usageUsd)}
+        value={money(t.usageUsd)}
         trend={diff == null ? undefined : { direction: diff > 2 ? "up" : diff < -2 ? "down" : "flat", text: `${diff > 0 ? "+" : ""}${diff}%` }}
         // Gasto subindo é atenção (lima), caindo é bom sinal (verde).
         trendTone={diff == null ? undefined : diff > 2 ? "down" : diff < -2 ? "up" : "flat"}
-        note={prev > 0 ? `Mês passado: ${usd(prev)}` : `Previsão: ${usd(t.usageForecastUsd)}`}
+        note={prev > 0 ? `Mês passado: ${money(prev)}` : `Previsão: ${money(t.usageForecastUsd)}`}
         help="Consumo das APIs pagas no mês. A variação compara a previsão deste mês com o total do mês passado."
       />
       <HeroStat
         label="Infraestrutura"
-        value={usd(t.fixedUsd)}
+        value={money(t.fixedUsd)}
         note={t.fixedMissing ? `${t.fixedMissing} sem valor` : "Por mês"}
         help="Soma dos custos fixos ativos."
       />
@@ -306,6 +311,7 @@ function Meter({ pct, status }: { pct: number | null; status: BillingStatus }) {
 }
 
 function UsageTable({ items, onEdit }: { items: BillingItem[]; onEdit: (i: BillingItem) => void }) {
+  const money = useMoney();
   return (
     <div className="rounded-card bg-card border px-2 py-1">
       <Table>
@@ -339,10 +345,10 @@ function UsageTable({ items, onEdit }: { items: BillingItem[]; onEdit: (i: Billi
                     </span>
                   </div>
                 </TableCell>
-                <TableCell className="text-right font-medium tabular-nums">{usd(i.spentUsd)}</TableCell>
+                <TableCell className="text-right font-medium tabular-nums">{money(i.spentUsd)}</TableCell>
                 <TableCell className="text-right tabular-nums">
-                  {usd(i.forecastUsd)}
-                  <span className="text-muted-foreground"> / {i.budgetUsd != null ? usd(i.budgetUsd, 0) : "—"}</span>
+                  {money(i.forecastUsd)}
+                  <span className="text-muted-foreground"> / {i.budgetUsd != null ? money(i.budgetUsd, 0) : "—"}</span>
                 </TableCell>
                 <TableCell>
                   <Badge variant={s.variant}>{s.label}</Badge>
@@ -362,6 +368,7 @@ function UsageTable({ items, onEdit }: { items: BillingItem[]; onEdit: (i: Billi
 const shortDay = (d: string) => `${Number(d.slice(8))}/${Number(d.slice(5, 7))}`;
 
 function DailyChart({ data }: { data: BillingOverview }) {
+  const money = useMoney();
   const providers = data.byProvider.map((p) => p.provider);
   const rows = data.byDay.map((d) => ({ day: d.day, ...d.providers }));
   if (!rows.length) return <p className="text-muted-foreground py-14 text-center text-xs">Sem gasto de API no mês.</p>;
@@ -372,7 +379,7 @@ function DailyChart({ data }: { data: BillingOverview }) {
           <BarChart data={rows} margin={{ top: 4, right: 4, bottom: 0, left: -12 }}>
             <CartesianGrid vertical={false} stroke="var(--border)" />
             <XAxis dataKey="day" tickFormatter={shortDay} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} minTickGap={12} />
-            <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} width={44} tickFormatter={(v: number) => `$${v}`} />
+            <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} width={52} tickFormatter={(v: number) => (money.rate ? `R$${Math.round(v * money.rate)}` : `$${v}`)} />
             <Tooltip
               cursor={{ fill: "var(--muted)" }}
               content={({ active, payload, label }: TooltipProps<number, string>) => {
@@ -387,12 +394,12 @@ function DailyChart({ data }: { data: BillingOverview }) {
                           <span className="size-2 rounded-full" style={{ background: colorOf(String(p.dataKey)) }} />
                           {providerLabel(String(p.dataKey))}
                         </span>
-                        <span className="font-medium">{usd(Number(p.value ?? 0))}</span>
+                        <span className="font-medium">{money(Number(p.value ?? 0))}</span>
                       </div>
                     ))}
                     <p className="mt-1.5 flex justify-between border-t pt-1.5 font-medium tabular-nums">
                       <span>Total</span>
-                      <span>{usd(total)}</span>
+                      <span>{money(total)}</span>
                     </p>
                   </div>
                 );
@@ -418,7 +425,7 @@ function DailyChart({ data }: { data: BillingOverview }) {
         {data.byProvider.map((p) => (
           <li key={p.provider} className="text-muted-foreground flex items-center gap-1.5 text-xs">
             <span className="size-2 rounded-full" style={{ background: colorOf(p.provider) }} aria-hidden />
-            {providerLabel(p.provider)} <span className="text-foreground font-medium tabular-nums">{usd(p.usd)}</span>
+            {providerLabel(p.provider)} <span className="text-foreground font-medium tabular-nums">{money(p.usd)}</span>
           </li>
         ))}
       </ul>

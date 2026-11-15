@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { useMoney } from "@/components/billing/money";
 
 type Kind = "FIXED" | "USAGE";
 
@@ -70,6 +71,12 @@ export function ItemDialog({
   item: BillingItem | null;
   kind?: Kind;
 }) {
+  // O provedor cobra em dólar: o campo segue em US$, com o valor em real embaixo.
+  const money = useMoney();
+  const inBrl = (raw: string, digits = 2) => {
+    const n = Number(raw.replace(",", "."));
+    return money.rate && raw.trim() && Number.isFinite(n) ? `≈ ${money(n, digits)}` : undefined;
+  };
   const qc = useQueryClient();
   const [f, setF] = useState<Form>(() => toForm(item, kind));
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setF((p) => ({ ...p, [k]: v }));
@@ -150,7 +157,7 @@ export function ItemDialog({
           <Field label="Provedor">
             <Input value={f.provider} onChange={(e) => set("provider", e.target.value)} placeholder="oci" required />
           </Field>
-          <Field label={usage ? "Orçamento do mês (US$)" : "Valor do mês (US$)"}>
+          <Field label={usage ? "Orçamento do mês (US$)" : "Valor do mês (US$)"} hint={inBrl(f.monthlyUsd)}>
             <Input inputMode="decimal" value={f.monthlyUsd} onChange={(e) => set("monthlyUsd", e.target.value)} placeholder="0,00" />
           </Field>
 
@@ -176,7 +183,7 @@ export function ItemDialog({
                   </Field>
                 </>
               ) : (
-                <Field label="US$ por minuto" className="col-span-2">
+                <Field label="US$ por minuto" className="col-span-2" hint={inBrl(f.usdPerUnit, 4)}>
                   <Input inputMode="decimal" value={f.usdPerUnit} onChange={(e) => set("usdPerUnit", e.target.value)} placeholder="0,0043" />
                 </Field>
               )}
