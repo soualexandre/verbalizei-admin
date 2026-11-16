@@ -19,6 +19,8 @@ export function clearToken() {
   window.localStorage.removeItem(TOKEN_KEY);
 }
 
+import { diagnose, statusMessage } from "./failure";
+
 export class ApiError extends Error {
   status: number;
   body: unknown;
@@ -57,11 +59,19 @@ export async function apiFetch<T = unknown>(
     }
   }
 
-  const res = await fetch(`${API_URL}${path}`, {
-    ...rest,
-    headers: finalHeaders,
-    body: finalBody,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      ...rest,
+      headers: finalHeaders,
+      body: finalBody,
+    });
+  } catch (err) {
+    // Sem resposta legível (o navegador diz "CORS"): a causa real (lib/failure.ts).
+    if ((err as { name?: string })?.name === "AbortError") throw err;
+    const e = await diagnose(API_URL, { method: rest.method, path, body: finalBody, cause: err });
+    throw new ApiError(0, e.message, { code: (e as Error & { code?: string }).code });
+  }
 
   if (res.status === 401) {
     clearToken();
@@ -81,7 +91,7 @@ export async function apiFetch<T = unknown>(
         ? Array.isArray((payload as { message: unknown }).message)
           ? ((payload as { message: string[] }).message).join(", ")
           : String((payload as { message: unknown }).message)
-        : null) || `Erro ${res.status}`;
+        : null) || statusMessage(res.status);
     throw new ApiError(res.status, message, payload);
   }
 
