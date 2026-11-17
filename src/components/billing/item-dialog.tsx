@@ -20,7 +20,7 @@ interface Form {
   provider: string;
   kind: Kind;
   monthlyUsd: string;
-  source: "ai-usage" | "audio-minutes";
+  source: "ai-usage" | "audio-minutes" | "google-tts";
   usageProvider: string;
   usageFeature: string;
   usdPerUnit: string;
@@ -90,8 +90,8 @@ export function ItemDialog({
         kind: f.kind,
         monthlyUsd: n(f.monthlyUsd),
         source: usage ? f.source : undefined,
-        usageProvider: usage && f.source === "ai-usage" ? f.usageProvider || null : null,
-        usageFeature: usage && f.source === "ai-usage" ? f.usageFeature || null : null,
+        usageProvider: usage && f.source === "ai-usage" ? f.usageProvider || null : usage && f.source === "google-tts" ? "google" : null,
+        usageFeature: usage && f.source === "ai-usage" ? f.usageFeature || null : usage && f.source === "google-tts" ? "tts" : null,
         usdPerUnit: usage && f.source === "audio-minutes" ? n(f.usdPerUnit) : null,
         quotaUnits: usage ? n(f.quotaUnits) : null,
         unitType: usage ? f.unitType || null : null,
@@ -171,9 +171,14 @@ export function ItemDialog({
                 >
                   <option value="ai-usage">Chamadas registradas pela API</option>
                   <option value="audio-minutes">Minutos de áudio analisados</option>
+                  <option value="google-tts">Google TTS: custo real (preço e cota grátis da API do Google)</option>
                 </select>
               </Field>
-              {f.source === "ai-usage" ? (
+              {f.source === "google-tts" ? (
+                <p className="text-muted-foreground col-span-2 text-xs">
+                  Conta só a voz gerada no Google (o cache não custa), por tipo de voz, e desconta a cota grátis do mês. O preço vem do catálogo do Google.
+                </p>
+              ) : f.source === "ai-usage" ? (
                 <>
                   <Field label="Filtro: provedor" hint="Como a API grava (google, openrouter…)">
                     <Input value={f.usageProvider} onChange={(e) => set("usageProvider", e.target.value)} placeholder="google" />

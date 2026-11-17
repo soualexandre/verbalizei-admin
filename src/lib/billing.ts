@@ -28,6 +28,21 @@ export interface BillingItem {
   usageProvider: string | null;
   usageFeature: string | null;
   usdPerUnit: number | null;
+  /** Google TTS (source "google-tts"): o custo por tipo de voz, com a cota grátis. */
+  breakdown?: TtsCostLine[] | null;
+  /** "google-catalog" = preço lido da API do Google; "fallback" = tabela do código. */
+  priceSource?: "google-catalog" | "fallback" | null;
+}
+
+export interface TtsCostLine {
+  tier: string;
+  label: string;
+  chars: number;
+  freeChars: number;
+  freeUsed: number;
+  billableChars: number;
+  usdPerMillion: number;
+  usd: number;
 }
 
 export interface BillingAlert {
@@ -58,6 +73,8 @@ export interface BillingOverview {
   alerts: BillingAlert[];
   /** Reais por dólar (PTAX do Banco Central, USD_BRL_RATE ou reserva). Ausente na API antiga. */
   exchange?: { rate: number; date: string | null; source: "bcb" | "env" | "fallback" };
+  /** Preço do Google TTS e de onde veio (17/11/2026). Ausente na API antiga. */
+  ttsPricing?: { source: "google-catalog" | "fallback"; fetchedAt: string | null; error?: string | null };
 }
 
 /** "R$ 1.234,56": o valor em dólar convertido pela cotação. */
@@ -107,6 +124,7 @@ export const providerLabel = (p: string) => PROVIDER_LABEL[p] ?? p;
 /** O que cada chamada faz no produto (feature gravada no AiUsage). */
 const FEATURE_LABEL: Record<string, string> = {
   tts: "Voz das personas",
+  "tts-cache": "Voz das personas (cache, grátis)",
   "participant-turn": "Fala da persona na sala",
   objectives: "Objetivos da conversa",
   "speech-builder": "Montador de discurso",

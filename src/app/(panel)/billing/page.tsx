@@ -113,7 +113,7 @@ export default function BillingPage() {
               </Button>
             }
           >
-            <UsageTable items={data.items.filter((i) => i.kind === "USAGE")} onEdit={(item) => setEditing({ item, kind: "USAGE" })} />
+            <UsageTable items={data.items.filter((i) => i.kind === "USAGE")} onEdit={(item) => setEditing({ item, kind: "USAGE" })} ttsPricing={data.ttsPricing} />
           </Section>
 
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
@@ -310,7 +310,15 @@ function Meter({ pct, status }: { pct: number | null; status: BillingStatus }) {
   );
 }
 
-function UsageTable({ items, onEdit }: { items: BillingItem[]; onEdit: (i: BillingItem) => void }) {
+function UsageTable({
+  items,
+  onEdit,
+  ttsPricing,
+}: {
+  items: BillingItem[];
+  onEdit: (i: BillingItem) => void;
+  ttsPricing?: BillingOverview["ttsPricing"];
+}) {
   const money = useMoney();
   return (
     <div className="rounded-card bg-card border px-2 py-1">
@@ -334,6 +342,7 @@ function UsageTable({ items, onEdit }: { items: BillingItem[]; onEdit: (i: Billi
                 <TableCell>
                   <span className="block font-medium">{i.name}</span>
                   <span className="text-muted-foreground text-xs">{i.calls ? `${i.calls.toLocaleString("pt-BR")} chamadas` : providerLabel(i.provider)}</span>
+                  {i.breakdown ? <TtsBreakdown item={i} pricing={ttsPricing} /> : null}
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col gap-1">
@@ -361,6 +370,37 @@ function UsageTable({ items, onEdit }: { items: BillingItem[]; onEdit: (i: Billi
           })}
         </TableBody>
       </Table>
+    </div>
+  );
+}
+
+/**
+ * Google TTS (17/11/2026): por tipo de voz, quanto da cota grátis do mês já
+ * foi usado e quanto passou dela (só isso custa), e de onde veio o preço.
+ */
+function TtsBreakdown({ item, pricing }: { item: BillingItem; pricing?: BillingOverview["ttsPricing"] }) {
+  const money = useMoney();
+  const lines = item.breakdown ?? [];
+  const fromGoogle = item.priceSource === "google-catalog";
+  return (
+    <div className="text-muted-foreground mt-1 flex flex-col gap-0.5 text-[11px] leading-snug">
+      {lines.length ? (
+        lines.map((l) => (
+          <span key={l.tier} className="tabular-nums">
+            {l.label}: {compact(l.freeUsed)} de {compact(l.freeChars)} grátis
+            {l.billableChars > 0
+              ? ` · ${compact(l.billableChars)} pagos a US$ ${l.usdPerMillion.toLocaleString("pt-BR")}/mi = ${money(l.usd)}`
+              : " · nada a pagar"}
+          </span>
+        ))
+      ) : (
+        <span>Nenhuma fala gerada no Google este mês (o cache não conta).</span>
+      )}
+      <span title={pricing?.error ?? undefined}>
+        {fromGoogle
+          ? `Preço e cota lidos da API do Google${pricing?.fetchedAt ? ` em ${new Date(pricing.fetchedAt).toLocaleDateString("pt-BR")}` : ""}`
+          : "Preço estimado pela tabela pública (a API de preços do Google não respondeu)"}
+      </span>
     </div>
   );
 }
