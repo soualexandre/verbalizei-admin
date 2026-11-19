@@ -4,11 +4,11 @@ import { useState } from "react";
 import type { DashboardOverview, LatencyStats, ReturnRate } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { HeroStat, HeroStats, InsightList, Section, type InsightTone } from "@/components/page-hero";
-import { ActiveUsersChart, HourlyChart, InteractionsChart, KindDonut, KindLegend, WeekHourHeatmap, WeekdayChart } from "./charts";
+import { ActiveUsersChart, HourlyChart, InteractionsChart, KindDonut, KindLegend, UsersByHourChart, WeekHourHeatmap, WeekdayChart } from "./charts";
 import { CohortTable } from "./cohort-table";
 import { DayActivityDialog } from "./day-activity-dialog";
 import { fmt, fmtPct, pointsTrend, relativeTrend, shortDay } from "./format";
-import { dayparts, funnelSentence, funnelSteps, hourSentence, slotSentence, summarySentences, weekdaySentence } from "./insights";
+import { dayparts, funnelSentence, funnelSteps, hourRange, hourSentence, slotSentence, summarySentences, weekdaySentence } from "./insights";
 
 /**
  * Os totalizadores da Visão geral, no topo (PageHero), o primeiro em verde de destaque. Padrão do admin
@@ -16,44 +16,53 @@ import { dayparts, funnelSentence, funnelSteps, hourSentence, slotSentence, summ
  */
 export function OverviewStats({ data }: { data: DashboardOverview }) {
   const { kpis, period, totals } = data;
-  const before = `${period.days} dias antes`;
+  const today = period.days === 1;
+  const before = !today ? `${period.days} dias antes` : period.compare === "same-time-yesterday" ? "ontem até esta hora" : "ontem";
+  const perPerson = kpis.activeUsers.value
+    ? `${(kpis.interactions.value / kpis.activeUsers.value).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} por pessoa`
+    : null;
   return (
     <HeroStats cols={data.microReturn ? 6 : 4}>
       <HeroStat
-        label="Pessoas que treinaram"
-        help="Pessoas que treinaram ao menos uma vez no período (cenário, gravação, treino curto ou jogo)."
+        label={today ? "Pessoas que treinaram hoje" : "Pessoas que treinaram"}
+        help={`Pessoas que treinaram ao menos uma vez ${today ? "hoje" : "no período"} (cenário, gravação, treino curto ou jogo).`}
         value={fmt(kpis.activeUsers.value)}
         trend={relativeTrend(kpis.activeUsers.value, kpis.activeUsers.previous)}
         note={totals.users ? `${fmtPct(Math.round((kpis.activeUsers.value / totals.users) * 1000) / 10)} da base · ${before}: ${fmt(kpis.activeUsers.previous)}` : undefined}
       />
+      {/* Sessões logo depois das pessoas (pedido de 19/11/2026): cada cenário, gravação, treino curto ou jogo conta uma. */}
       <HeroStat
-        label="Novos cadastros"
-        help="Contas criadas no período, e quantas já treinaram."
+        label={today ? "Sessões hoje" : "Sessões de treino"}
+        help="Cada treino conta uma sessão: cenário, gravação, treino curto ou jogo."
+        value={fmt(kpis.interactions.value)}
+        trend={relativeTrend(kpis.interactions.value, kpis.interactions.previous)}
+        note={[perPerson, `${before}: ${fmt(kpis.interactions.previous)}`].filter(Boolean).join(" · ")}
+      />
+      <HeroStat
+        label={today ? "Novos cadastros hoje" : "Novos cadastros"}
+        help={`Contas criadas ${today ? "hoje" : "no período"}, e quantas já treinaram.`}
         value={fmt(kpis.newUsers.value)}
         trend={relativeTrend(kpis.newUsers.value, kpis.newUsers.previous)}
         note={
           kpis.newUsers.value
             ? `${fmt(kpis.newUsers.activated)} já treinaram (${fmtPct(Math.round((kpis.newUsers.activated / kpis.newUsers.value) * 100))})`
-            : "Nenhum cadastro no período"
-        }
-      />
-      <HeroStat
-        label="Treinos feitos"
-        help="Tudo o que foi treinado: cenários, gravações, treinos curtos e jogos."
-        value={fmt(kpis.interactions.value)}
-        trend={relativeTrend(kpis.interactions.value, kpis.interactions.previous)}
-        note={
-          kpis.activeUsers.value
-            ? `${(kpis.interactions.value / kpis.activeUsers.value).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} por pessoa que treinou`
-            : undefined
+            : today
+              ? "Nenhum cadastro hoje"
+              : "Nenhum cadastro no período"
         }
       />
       <HeroStat
         label="Voltaram a treinar"
-        help="De quem treinou no período anterior, quantos voltaram a treinar neste (retenção)."
+        help={today ? "De quem treinou ontem, quantos já treinaram hoje." : "De quem treinou no período anterior, quantos voltaram a treinar neste (retenção)."}
         value={kpis.retention.value == null ? "—" : fmtPct(kpis.retention.value)}
         trend={pointsTrend(kpis.retention.value, kpis.retention.previous)}
-        note={kpis.retention.base ? `dos ${fmt(kpis.retention.base)} do período anterior` : "Ninguém no período anterior"}
+        note={
+          kpis.retention.base
+            ? `dos ${fmt(kpis.retention.base)} ${today ? "de ontem" : "do período anterior"}`
+            : today
+              ? "Ninguém treinou ontem"
+              : "Ninguém no período anterior"
+        }
       />
       {/* A volta ao treino curto é número, não conclusão: fica na faixa (revisão de 25/10/2026). */}
       {data.microReturn && (
@@ -77,7 +86,10 @@ export function OverviewStats({ data }: { data: DashboardOverview }) {
 /** A linha de base da faixa: o período e o tamanho da base. */
 export function overviewDescription(data: DashboardOverview): string {
   const { period, totals } = data;
-  return `${shortDay(period.from)} a ${shortDay(period.to)}, comparado aos ${period.days} dias anteriores · base de ${fmt(totals.users)} pessoas, ${fmt(totals.premium)} premium.`;
+  const base = `base de ${fmt(totals.users)} pessoas, ${fmt(totals.premium)} premium.`;
+  if (period.days === 1)
+    return `Hoje, ${shortDay(period.to)}, comparado com ${period.compare === "same-time-yesterday" ? "ontem até esta hora" : "ontem"} · ${base}`;
+  return `${shortDay(period.from)} a ${shortDay(period.to)}, comparado aos ${period.days} dias anteriores · ${base}`;
 }
 
 const CHART_CARD = "min-w-0 gap-4 shadow-none";
@@ -89,6 +101,7 @@ const CHART_CARD = "min-w-0 gap-4 shadow-none";
  */
 export function Overview({ data }: { data: DashboardOverview }) {
   const { kpis, period } = data;
+  const today = period.days === 1;
   const completion = data.scenarioCompletion;
   const completionRate = completion.started ? (completion.completed / completion.started) * 100 : null;
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
@@ -98,7 +111,52 @@ export function Overview({ data }: { data: DashboardOverview }) {
 
   return (
     <div className="space-y-12">
-      {data.weekday && data.heatmap && data.hourly && (
+      {/* Primeira coisa da tela (pedido de 19/11/2026): quantas pessoas treinaram, hora a hora no filtro Hoje. */}
+      <Section
+        title={today ? "Quem treinou hoje" : "Quem treinou, dia a dia"}
+        description={today ? "Pessoas por hora, no fuso de Brasília. Clique para ver quem treinou e em quê." : "Clique num dia para ver quem treinou e em quê."}
+      >
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Card className={`${CHART_CARD} lg:col-span-2`}>
+            <CardHeader>
+              <CardTitle className="text-base">{today ? "Pessoas que treinaram por hora" : "Pessoas que treinaram por dia"}</CardTitle>
+              <CardDescription className="text-foreground/80 tabular-nums">
+                {today ? todaySentence(data) : peakDaySentence(data.daily)}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {today && data.hourly ? (
+                <UsersByHourChart hourly={data.hourly} untilHour={spHourNow()} onSelect={() => setSelectedDay(period.to)} />
+              ) : (
+                <ActiveUsersChart daily={data.daily} onSelectDay={setSelectedDay} />
+              )}
+              <DayActivityDialog day={selectedDay} onClose={() => setSelectedDay(null)} />
+            </CardContent>
+          </Card>
+          <Card className={CHART_CARD}>
+            <CardHeader>
+              <CardTitle className="text-base">O que treinam</CardTitle>
+              <CardDescription>{today ? "A fatia de cada tipo hoje." : "A fatia de cada tipo no período."}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <KindDonut byKind={kpis.interactions.byKind} />
+            </CardContent>
+          </Card>
+          {!today && (
+            <Card className={`${CHART_CARD} lg:col-span-3`}>
+              <CardHeader>
+                <CardTitle className="text-base">Treinos por dia, por tipo</CardTitle>
+                <KindLegend byKind={kpis.interactions.byKind} users={kpis.activeUsers.value} />
+              </CardHeader>
+              <CardContent>
+                <InteractionsChart daily={data.daily} />
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </Section>
+
+      {!today && data.weekday && data.heatmap && data.hourly && (
         <Section title="Quando as pessoas treinam" description="Dia da semana e horário, no fuso de Brasília. Bom para escolher a hora de lembretes, posts e e-mails.">
           <div className="grid gap-4 lg:grid-cols-2">
             <Card className={CHART_CARD}>
@@ -137,39 +195,6 @@ export function Overview({ data }: { data: DashboardOverview }) {
           </Card>
         </Section>
       )}
-
-      <Section title="Quem treinou, dia a dia" description="Clique num dia para ver quem treinou e em quê.">
-        <div className="grid gap-4 lg:grid-cols-3">
-          <Card className={`${CHART_CARD} lg:col-span-2`}>
-            <CardHeader>
-              <CardTitle className="text-base">Pessoas que treinaram por dia</CardTitle>
-              <CardDescription className="text-foreground/80 tabular-nums">{peakDaySentence(data.daily)}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ActiveUsersChart daily={data.daily} onSelectDay={setSelectedDay} />
-              <DayActivityDialog day={selectedDay} onClose={() => setSelectedDay(null)} />
-            </CardContent>
-          </Card>
-          <Card className={CHART_CARD}>
-            <CardHeader>
-              <CardTitle className="text-base">O que treinam</CardTitle>
-              <CardDescription>A fatia de cada tipo no período.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <KindDonut byKind={kpis.interactions.byKind} />
-            </CardContent>
-          </Card>
-          <Card className={`${CHART_CARD} lg:col-span-3`}>
-            <CardHeader>
-              <CardTitle className="text-base">Treinos por dia, por tipo</CardTitle>
-              <KindLegend byKind={kpis.interactions.byKind} users={kpis.activeUsers.value} />
-            </CardHeader>
-            <CardContent>
-              <InteractionsChart daily={data.daily} />
-            </CardContent>
-          </Card>
-        </div>
-      </Section>
 
       <Section title="Do cadastro ao hábito" description="Quem chega, quem começa a treinar e quem continua.">
         <div className="grid gap-4 lg:grid-cols-2">
@@ -235,6 +260,23 @@ export function Overview({ data }: { data: DashboardOverview }) {
         </details>
       )}
     </div>
+  );
+}
+
+/** A hora atual em Brasília (0–23): o gráfico de hoje para nela. */
+function spHourNow(): number {
+  const h = new Intl.DateTimeFormat("en-GB", { timeZone: "America/Sao_Paulo", hour: "2-digit", hourCycle: "h23" }).format(new Date());
+  return Number(h) || 0;
+}
+
+/** "9 pessoas treinaram hoje, em 14 sessões; a hora mais cheia foi das 19h às 20h, com 4." */
+function todaySentence(data: DashboardOverview): string {
+  const { activeUsers, interactions } = data.kpis;
+  if (!activeUsers.value) return "Ninguém treinou hoje ainda.";
+  const peak = (data.hourly ?? []).reduce<{ hour: number; users: number } | null>((a, b) => (b.users > (a?.users ?? 0) ? b : a), null);
+  return (
+    `${fmt(activeUsers.value)} ${activeUsers.value === 1 ? "pessoa treinou" : "pessoas treinaram"} hoje, em ${fmt(interactions.value)} ${interactions.value === 1 ? "sessão" : "sessões"}` +
+    (peak ? `; a hora mais cheia foi ${hourRange(peak.hour)}, com ${fmt(peak.users)}.` : ".")
   );
 }
 

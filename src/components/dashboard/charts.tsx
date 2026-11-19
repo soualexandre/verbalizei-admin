@@ -233,6 +233,52 @@ export function HourlyChart({ hourly }: { hourly: Hourly }) {
   );
 }
 
+/**
+ * Pessoas que treinaram em cada hora do dia (filtro Hoje, 19/11/2026), até a
+ * hora atual. A mesma pessoa pode aparecer em mais de uma hora. Clique abre
+ * quem treinou no dia.
+ */
+export function UsersByHourChart({ hourly, untilHour, onSelect }: { hourly: Hourly; untilHour: number; onSelect?: () => void }) {
+  const data = hourly.filter((h) => h.hour <= untilHour);
+  const peak = Math.max(0, ...data.map((h) => h.users));
+  return (
+    <Frame>
+      <BarChart
+        data={data}
+        margin={{ top: 8, right: 8, bottom: 0, left: -4 }}
+        className={onSelect ? "cursor-pointer" : undefined}
+        onClick={() => onSelect?.()}
+      >
+        <CartesianGrid vertical={false} stroke="var(--border)" />
+        <XAxis dataKey="hour" tickFormatter={hourLabel} tick={AXIS} tickLine={false} axisLine={false} interval={data.length > 12 ? 1 : 0} />
+        <YAxis allowDecimals={false} tick={AXIS} tickLine={false} axisLine={false} width={40} />
+        <Tooltip
+          cursor={{ fill: "var(--muted)" }}
+          content={({ active, payload }: TooltipProps<number, string>) => {
+            if (!active || !payload?.length) return null;
+            const h = payload[0].payload as Hourly[number];
+            return (
+              <TooltipBox
+                title={`${hourLabel(h.hour)} às ${hourLabel((h.hour + 1) % 24)}`}
+                rows={[
+                  { label: "Pessoas", value: h.users },
+                  { label: "Sessões", value: h.interactions },
+                ]}
+                hint={onSelect && h.users > 0 ? "Clique para ver quem" : undefined}
+              />
+            );
+          }}
+        />
+        <Bar dataKey="users" radius={[3, 3, 0, 0]} maxBarSize={28} isAnimationActive={false}>
+          {data.map((h) => (
+            <Cell key={h.hour} fill={peak > 0 && h.users === peak ? "var(--chart-1)" : "var(--chart-2)"} />
+          ))}
+        </Bar>
+      </BarChart>
+    </Frame>
+  );
+}
+
 type Weekday = NonNullable<DashboardOverview["weekday"]>;
 const WEEKDAY_SHORT = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 const WEEKDAY_LONG = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];

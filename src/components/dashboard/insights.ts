@@ -149,19 +149,27 @@ export function summarySentences(data: DashboardOverview): string[] {
     active.previous > 0
       ? Math.round(((active.value - active.previous) / active.previous) * 100)
       : null;
+  const today = period.days === 1;
+  const before = today
+    ? period.compare === "same-time-yesterday"
+      ? "ontem até esta hora"
+      : "ontem"
+    : `nos ${period.days} dias anteriores`;
   out.push(
-    `${fmt(active.value)} ${active.value === 1 ? "pessoa treinou" : "pessoas treinaram"} nos últimos ${period.days} dias` +
+    `${fmt(active.value)} ${active.value === 1 ? "pessoa treinou" : "pessoas treinaram"} ${today ? "hoje" : `nos últimos ${period.days} dias`}` +
       (change == null
         ? "."
         : change === 0
-          ? ", o mesmo que nos dias anteriores."
-          : `, ${Math.abs(change)}% ${change > 0 ? "a mais" : "a menos"} que nos ${period.days} dias anteriores.`),
+          ? `, o mesmo que ${before}.`
+          : `, ${Math.abs(change)}% ${change > 0 ? "a mais" : "a menos"} que ${before}.`),
   );
   const n = kpis.newUsers;
   out.push(
     n.value
       ? `${fmt(n.value)} ${n.value === 1 ? "pessoa nova chegou" : "pessoas novas chegaram"}; ${fmt(n.activated)} (${fmtPct(Math.round((n.activated / n.value) * 100))}) já ${n.activated === 1 ? "fez" : "fizeram"} o primeiro treino.`
-      : "Ninguém se cadastrou no período.",
+      : today
+        ? "Ninguém se cadastrou hoje."
+        : "Ninguém se cadastrou no período.",
   );
   const best = bestWeekday(data.weekday);
   if (best) out.push(weekdaySentence(data.weekday).split(" O mais fraco")[0]);
@@ -169,7 +177,11 @@ export function summarySentences(data: DashboardOverview): string[] {
   if (peak) out.push(`O horário de pico é ${hourRange(peak.hour)}.`);
   const r = kpis.retention;
   if (r.value != null && r.base > 0) {
-    out.push(`Dos ${fmt(r.base)} que treinaram no período anterior, ${fmtPct(r.value)} voltaram neste.`);
+    out.push(
+      today
+        ? `Dos ${fmt(r.base)} que treinaram ontem, ${fmtPct(r.value)} já voltaram hoje.`
+        : `Dos ${fmt(r.base)} que treinaram no período anterior, ${fmtPct(r.value)} voltaram neste.`,
+    );
   }
   return out;
 }

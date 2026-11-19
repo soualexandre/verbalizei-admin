@@ -88,7 +88,8 @@ export interface Kpi {
 }
 
 export interface DashboardOverview {
-  period: { days: number; from: string; to: string };
+  /** `compare`: em days = 1, o "anterior" é ontem até a mesma hora (API antiga: ausente = ontem inteiro). */
+  period: { days: number; from: string; to: string; compare?: "same-time-yesterday" };
   totals: { users: number; premium: number; admins: number };
   kpis: {
     activeUsers: Kpi;

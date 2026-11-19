@@ -10,18 +10,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Overview, OverviewStats, overviewDescription } from "@/components/dashboard/overview";
 
-const PERIODS = [7, 30, 90] as const;
+/** 1 = Hoje, o padrão ao entrar (pedido de 19/11/2026). */
+const PERIODS = [1, 7, 30, 90] as const;
 
 /**
- * Visão geral (padrão do admin desde 25/10/2026: faixa azul com os
- * totalizadores → gráficos → insights): a saúde do produto no período (7, 30 ou 90 dias) contra o
- * período anterior de mesmo tamanho. "Ativo" = fez ao menos uma interação
+ * Visão geral (padrão do admin desde 25/10/2026: faixa com os
+ * totalizadores → gráficos → insights): a saúde do produto no período (hoje, 7, 30 ou 90 dias) contra o
+ * período anterior de mesmo tamanho. Abre em Hoje, com quem treinou hora a hora
+ * no topo; hoje é comparado com ontem até a mesma hora. "Ativo" = fez ao menos uma interação
  * (cenário, gravação, micro-treino ou jogo) — a mesma régua da coluna
  * Interações dos usuários. Usuários de teste (mock) e admins nunca entram.
  * Financeiro não entra aqui.
  */
 export default function DashboardPage() {
-  const [days, setDays] = useState<(typeof PERIODS)[number]>(7);
+  const [days, setDays] = useState<(typeof PERIODS)[number]>(1);
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["overview", days],
@@ -35,7 +37,7 @@ export default function DashboardPage() {
       <TabsList>
         {PERIODS.map((p) => (
           <TabsTrigger key={p} value={String(p)} className="tabular-nums">
-            {p} dias
+            {p === 1 ? "Hoje" : `${p} dias`}
           </TabsTrigger>
         ))}
       </TabsList>
@@ -46,7 +48,7 @@ export default function DashboardPage() {
     <>
       <PageHero
         title="Visão geral"
-        description={data ? overviewDescription(data) : `Uso nos últimos ${days} dias, comparado aos ${days} dias anteriores.`}
+        description={data ? overviewDescription(data) : days === 1 ? "Uso de hoje, comparado com ontem." : `Uso nos últimos ${days} dias, comparado aos ${days} dias anteriores.`}
         actions={tabs}
       >
         {data ? (
