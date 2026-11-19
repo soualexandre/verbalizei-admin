@@ -102,8 +102,10 @@ export interface DashboardOverview {
   daily: Array<{ day: string; activeUsers: number } & ByKind>;
   /** Semana de cadastro (segunda-feira) e % ativo nas semanas 0–4 depois dela; null = ainda não chegou. */
   cohorts: Array<{ week: string; size: number; retention: (number | null)[] }>;
-  topScenarios: Array<{ id: string; title: string; sessions: number; users: number }>;
-  scenarioCompletion: { started: number; completed: number };
+  /** Os criados pelas pessoas vêm somados numa linha (`created: true`, `scenarios` = quantos diferentes). */
+  topScenarios: Array<{ id: string; title: string; sessions: number; users: number; created?: true; scenarios?: number }>;
+  /** `created*` = a parte em cenários criados pelas pessoas (ausente em API antiga). */
+  scenarioCompletion: { started: number; completed: number; createdStarted?: number; createdCompleted?: number };
   /** Volta depois do micro-treino: dia seguinte (D1) e do 2º ao 7º dia. API antiga: ausente. */
   microReturn?: {
     nextDay: ReturnRate;

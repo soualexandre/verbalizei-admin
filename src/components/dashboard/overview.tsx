@@ -221,7 +221,11 @@ export function Overview({ data }: { data: DashboardOverview }) {
               <CardTitle className="text-base">Cenários mais treinados</CardTitle>
               <CardDescription className="tabular-nums">
                 {completion.started && completionRate != null
-                  ? `${fmt(completion.completed)} de ${fmt(completion.started)} cenários abertos foram até o fim (${fmtPct(Math.round(completionRate))}).`
+                  ? `${fmt(completion.completed)} de ${fmt(completion.started)} cenários abertos foram até o fim (${fmtPct(Math.round(completionRate))})${
+                      completion.createdStarted
+                        ? `; dos abertos, ${fmt(completion.createdStarted)} em cenários criados pelas pessoas (${fmt(completion.createdCompleted ?? 0)} até o fim)`
+                        : ""
+                    }.`
                   : "Nenhum cenário no período."}
               </CardDescription>
             </CardHeader>
@@ -230,9 +234,12 @@ export function Overview({ data }: { data: DashboardOverview }) {
                 <ol className="divide-y">
                   {data.topScenarios.map((s, i) => (
                     <li key={s.id} className="flex items-center gap-3 py-2.5 text-sm">
-                      <span className="bg-brand-50 text-brand-ink flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums">{i + 1}</span>
+                      <span className="bg-brand-50 text-brand-ink flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums">{i < 5 ? i + 1 : "+"}</span>
                       <span className="min-w-0 flex-1 truncate" title={s.title}>
                         {s.title}
+                        {s.created && s.scenarios ? (
+                          <span className="text-muted-foreground"> · {fmt(s.scenarios)} {s.scenarios === 1 ? "cenário" : "cenários"}</span>
+                        ) : null}
                       </span>
                       <span className="text-right tabular-nums">
                         <span className="font-semibold">{fmt(s.sessions)}</span>
