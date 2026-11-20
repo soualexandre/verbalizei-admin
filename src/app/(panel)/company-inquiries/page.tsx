@@ -25,7 +25,7 @@ interface CompanyInquiry {
   teamSize: string;
   area: string | null;
   marketing: boolean;
-  source: "empresas" | "home";
+  source: "empresas" | "home" | "links";
   utm: Record<string, string> | null;
   status: InquiryStatus;
   notes: string | null;
@@ -49,7 +49,7 @@ const COLUMNS: { status: InquiryStatus; title: string; hint: string; dot: string
 ];
 const ORDER = COLUMNS.map((c) => c.status);
 
-const SOURCE_LABEL: Record<CompanyInquiry["source"], string> = { empresas: "Página Para empresas", home: "Home do site" };
+const SOURCE_LABEL: Record<CompanyInquiry["source"], string> = { empresas: "Página Para empresas", home: "Home do site", links: "Links da bio" };
 
 /** De onde veio a visita, em uma linha ("google.com · organic · site-home"). */
 const utmText = (u: CompanyInquiry["utm"]) => (u ? [u.source, u.medium, u.campaign].filter(Boolean).join(" · ") : "");
