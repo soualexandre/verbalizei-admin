@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FilePlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
@@ -15,7 +15,17 @@ import {
   isoToDateInput,
   parseBrlToCents,
 } from "@/lib/organizations";
-import type { AdminOrgBilling, CreatedOrgInvoice, OrgInvoice, OrgInvoiceStatus } from "@/lib/types";
+import type {
+  AdminOrgBilling,
+  AdminOrganizationDetail,
+  BillingCycle,
+  BusinessPlanKey,
+  CreatedOrgInvoice,
+  OrgInvoice,
+  OrgInvoiceStatus,
+  OrgQuote,
+} from "@/lib/types";
+import { BUSINESS_PLAN_NAME, BUSINESS_PLANS, CYCLE_LABEL } from "@/lib/pricing";
 import { formatDate } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { ErrorState } from "@/components/error-state";
@@ -26,10 +36,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { QuoteSummary } from "@/components/pricing/quote-summary";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const INVOICE_MAX_BYTES = 5 * 1024 * 1024;
+
+/** Valor do select para "sem plano da tabela" (o Radix não aceita valor vazio). */
+const NO_PLAN = "NONE";
 
 /** Contrato e nota fiscal da empresa: dados da nota (só leitura), preço combinado, aceite e notas anexadas. */
 export function OrgBillingSection({ orgId, orgName }: { orgId: string; orgName: string }) {
@@ -40,6 +55,11 @@ export function OrgBillingSection({ orgId, orgName }: { orgId: string; orgName: 
   const billing = useQuery({
     queryKey: ["organizations", orgId, "billing"],
     queryFn: () => api.get<AdminOrgBilling>(`/admin/organizations/${orgId}/billing`),
+  });
+  // O mesmo detalhe que a página já carregou (plano da tabela, pessoas, parceiro).
+  const org = useQuery({
+    queryKey: ["organizations", orgId],
+    queryFn: () => api.get<AdminOrganizationDetail>(`/admin/organizations/${orgId}`),
   });
   const invoices = useQuery({
     queryKey: ["organizations", orgId, "invoices"],
@@ -73,7 +93,13 @@ export function OrgBillingSection({ orgId, orgName }: { orgId: string; orgName: 
           <div className="grid gap-4 lg:grid-cols-2">
             <BillingDataCard data={billing.data} />
             <div className="space-y-4">
-              <PriceCard orgId={orgId} data={billing.data} />
+              <PriceCard
+                // Recomeça o formulário quando o salvo muda.
+                key={`${billing.data.monthlyPriceCents}-${org.data?.pricingPlan ?? "none"}-${org.data?.billingCycle ?? "none"}-${!!org.data}`}
+                orgId={orgId}
+                data={billing.data}
+                org={org.data}
+              />
               <ContractCard data={billing.data} />
             </div>
           </div>
@@ -219,55 +245,162 @@ function BillingDataCard({ data }: { data: AdminOrgBilling }) {
   );
 }
 
-function PriceCard({ orgId, data }: { orgId: string; data: AdminOrgBilling }) {
+/**
+ * Preço da empresa (20/11/2026): o plano da tabela e o ciclo, o orçamento pela
+ * tabela atual (aba Preços) e o preço mensal combinado, que o admin pode
+ * preencher com o valor calculado ou digitar outro.
+ */
+function PriceCard({ orgId, data, org }: { orgId: string; data: AdminOrgBilling; org: AdminOrganizationDetail | undefined }) {
   const qc = useQueryClient();
+  const savedPlan = org?.pricingPlan ?? NO_PLAN;
+  const savedCycle: BillingCycle = org?.billingCycle ?? "ANNUAL";
+  const [plan, setPlan] = useState<BusinessPlanKey | typeof NO_PLAN>(savedPlan);
+  const [cycle, setCycle] = useState<BillingCycle>(savedCycle);
   const [value, setValue] = useState(centsToBrlInput(data.monthlyPriceCents));
-  useEffect(() => setValue(centsToBrlInput(data.monthlyPriceCents)), [data.monthlyPriceCents]);
 
   const cents = parseBrlToCents(value);
   const invalid = cents !== null && (Number.isNaN(cents) || cents > 100_000_000);
-  const changed = !invalid && cents !== data.monthlyPriceCents;
+  const hasPlan = plan !== NO_PLAN;
+  const effectiveCycle: BillingCycle = plan === "PILOTO" ? "MONTHLY" : cycle;
+  const planChanged = !!org && plan !== savedPlan;
+  const cycleChanged = !!org && hasPlan && effectiveCycle !== (org.billingCycle ?? null);
+  const priceChanged = !invalid && cents !== data.monthlyPriceCents;
+  const changed = !invalid && (priceChanged || planChanged || cycleChanged);
+
+  const seats = org?.seats ?? 0;
+  const params = new URLSearchParams({ plan: hasPlan ? plan : "", cycle: effectiveCycle, seats: String(seats), partner: String(!!org?.partnerName) });
+  if (plan === "EMPRESA" && cents != null && !Number.isNaN(cents) && seats > 0) params.set("agreedPerSeat", String(Math.round(cents / seats) / 100));
+  const quote = useQuery({
+    queryKey: ["pricing", "quote", params.toString()],
+    queryFn: () => api.get<OrgQuote>(`/admin/pricing/quote?${params.toString()}`),
+    enabled: !!org && hasPlan,
+    placeholderData: keepPreviousData,
+  });
+  const q = hasPlan ? (quote.data?.plan === plan ? quote.data : null) : null;
+  const suggestedCents = q?.monthlyTotal != null ? Math.round(q.monthlyTotal * 100) : null;
 
   const save = useMutation({
-    mutationFn: () => api.patch(`/admin/organizations/${orgId}`, { monthlyPriceCents: cents }),
+    mutationFn: () =>
+      api.patch(`/admin/organizations/${orgId}`, {
+        ...(priceChanged && { monthlyPriceCents: cents }),
+        ...(planChanged && { pricingPlan: hasPlan ? plan : null }),
+        ...((planChanged || cycleChanged) && { billingCycle: hasPlan ? effectiveCycle : null }),
+      }),
     onSuccess: () => {
-      toast.success(cents === null ? "Preço tirado do contrato." : `Preço salvo: ${formatCents(cents)} por mês.`);
+      toast.success(
+        planChanged
+          ? hasPlan
+            ? `Plano salvo: ${BUSINESS_PLAN_NAME[plan as BusinessPlanKey]}. O dono precisa aceitar o contrato novo no portal.`
+            : "A empresa saiu do plano da tabela."
+          : cents === null
+            ? "Preço tirado do contrato."
+            : `Preço salvo: ${formatCents(cents)} por mês.`,
+      );
       qc.invalidateQueries({ queryKey: ["organizations", orgId] });
+      qc.invalidateQueries({ queryKey: ["pricing"] });
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Não deu para salvar o preço."),
   });
 
   return (
     <Card>
-      <CardContent className="space-y-3 pt-6">
-        <Label htmlFor="org-price" className="text-sm font-semibold">Preço mensal combinado</Label>
+      <CardContent className="space-y-4 pt-6">
         <form
-          className="flex gap-2"
+          className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
             if (changed) save.mutate();
           }}
         >
-          <div className="relative flex-1">
-            <span className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm">R$</span>
-            <Input
-              id="org-price"
-              inputMode="decimal"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder="990,00"
-              className="pl-9 tabular-nums"
-              aria-invalid={invalid}
-            />
+          {org && (
+            <div className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label htmlFor="org-plan" className="text-xs font-medium">Plano da tabela</Label>
+                  <Select value={plan} onValueChange={(v) => setPlan(v as BusinessPlanKey | typeof NO_PLAN)}>
+                    <SelectTrigger id="org-plan" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_PLAN}>Sem plano da tabela</SelectItem>
+                      {BUSINESS_PLANS.map((k) => (
+                        <SelectItem key={k} value={k}>
+                          {BUSINESS_PLAN_NAME[k]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {hasPlan && plan !== "PILOTO" && (
+                  <div className="space-y-1">
+                    <Label htmlFor="org-cycle" className="text-xs font-medium">Ciclo</Label>
+                    <Select value={cycle} onValueChange={(v) => setCycle(v as BillingCycle)}>
+                      <SelectTrigger id="org-cycle" className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ANNUAL">{CYCLE_LABEL.ANNUAL}</SelectItem>
+                        <SelectItem value="MONTHLY">{CYCLE_LABEL.MONTHLY}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+              <p className="text-muted-foreground text-xs">
+                Com plano da tabela, a empresa ganha o uso justo de conversas por pessoa e um contrato novo, que o dono precisa aceitar de novo no portal.
+              </p>
+              {hasPlan && (
+                <div className="bg-muted/50 space-y-3 rounded-lg border p-3">
+                  {quote.isError ? (
+                    <ErrorState bare title="Não deu para calcular pela tabela." error={quote.error} onRetry={() => quote.refetch()} />
+                  ) : !q ? (
+                    <Skeleton className="h-16" />
+                  ) : (
+                    <QuoteSummary quote={q} />
+                  )}
+                  {q && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={suggestedCents == null || suggestedCents === cents}
+                      onClick={() => suggestedCents != null && setValue(centsToBrlInput(suggestedCents))}
+                    >
+                      Usar o valor calculado
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="org-price" className="text-sm font-semibold">Preço mensal combinado</Label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <span className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm">R$</span>
+                <Input
+                  id="org-price"
+                  inputMode="decimal"
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                  placeholder="990,00"
+                  className="pl-9 tabular-nums"
+                  aria-invalid={invalid}
+                />
+              </div>
+              <Button type="submit" variant="outline" disabled={!changed || save.isPending}>
+                {save.isPending && <Loader2 className="size-4 animate-spin" />}
+                Salvar
+              </Button>
+            </div>
+            <p className={invalid ? "text-destructive text-xs" : "text-muted-foreground text-xs"}>
+              {invalid
+                ? "Escreva o valor em reais, como 990 ou 990,00."
+                : "Aparece no contrato que o dono da empresa aceita no portal. Pode ser diferente do calculado. Vazio tira o preço."}
+            </p>
           </div>
-          <Button type="submit" variant="outline" disabled={!changed || save.isPending}>
-            {save.isPending && <Loader2 className="size-4 animate-spin" />}
-            Salvar
-          </Button>
         </form>
-        <p className={invalid ? "text-destructive text-xs" : "text-muted-foreground text-xs"}>
-          {invalid ? "Escreva o valor em reais, como 990 ou 990,00." : "Aparece no contrato que o dono da empresa aceita no portal. Vazio tira o preço."}
-        </p>
       </CardContent>
     </Card>
   );

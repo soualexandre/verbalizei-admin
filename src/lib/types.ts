@@ -801,6 +801,13 @@ export interface AdminOrganizationDetail {
   logoVersion: string | null;
   portalUrl: string;
   createdAt: string;
+  /** Preço mensal combinado, em centavos. Ausente na API antiga. */
+  monthlyPriceCents?: number | null;
+  /** Plano da tabela de preços (null = sem plano, sem uso justo). Ausente na API antiga. */
+  pricingPlan?: BusinessPlanKey | null;
+  billingCycle?: BillingCycle | null;
+  /** Orçamento pela tabela atual, quando há plano. */
+  pricingQuote?: OrgQuote | null;
   members: AdminOrganizationMember[];
   scenarios: Array<{ id: string; title: string; status: string; createdAt: string }>;
 }
@@ -904,4 +911,113 @@ export interface AccessLogItem {
   resourceId: string | null;
   createdAt: string;
   actor: { id: string; name: string | null; email: string | null };
+}
+
+// ─── Política de preços (aba Preços, verbalizei-api/docs/politica-de-precos.md, 20/11/2026) ─
+
+/** Planos da tabela para empresas. */
+export type BusinessPlanKey = "ESSENCIAL" | "PRO" | "PILOTO" | "EMPRESA";
+export type BillingCycle = "MONTHLY" | "ANNUAL";
+
+/** Promoção do Max: preço do mensal e/ou do anual entre duas datas (início e fim inclusive). */
+export interface PricingPromo {
+  id: string;
+  name: string;
+  startsAt: string;
+  endsAt: string;
+  enabled: boolean;
+  /** R$; null = sem desconto no mensal. */
+  maxMonthly: number | null;
+  /** R$; null = sem desconto no anual. */
+  maxAnnual: number | null;
+  /** Esconde o Super da página de vendas enquanto vale. */
+  hideStarter: boolean;
+}
+
+/** A política inteira. Dinheiro em reais (number). */
+export interface PricingPolicy {
+  consumer: {
+    starter: { monthly: number; annual: number };
+    max: {
+      monthly: number;
+      annual: number;
+      /** Conversas por mês; null = sem limite. */
+      fairUsePerMonth: number | null;
+      /** Quem comprou antes desta data segue sem limite até a próxima compra. */
+      fairUseStartsAt: string;
+    };
+    pass: { enabled: boolean; amount: number; days: number; conversations: number };
+  };
+  business: {
+    minSeats: number;
+    essencial: { annual: number; monthly: number; maxSeats: number };
+    pro: { annual: number; monthly: number; maxSeats: number };
+    pilot: { amount: number; seats: number; days: number };
+    enterprise: { floorAnnual: number };
+    partnerDiscountPercent: number;
+    /** Conversas por pessoa por mês; null = sem limite. */
+    fairUsePerPerson: number | null;
+  };
+  promos: PricingPromo[];
+}
+
+/** Limites do Grátis e do Super (gravados nas tabelas de cota). */
+export interface PricingLimits {
+  free: { limit: number; period: QuotaPeriod; drillsPerDay: number | null };
+  starter: { limit: number; period: QuotaPeriod };
+}
+
+export interface PricingPerson {
+  id: string;
+  name: string | null;
+  email: string | null;
+}
+
+/** GET (e resposta do PUT) /admin/pricing. */
+export interface AdminPricing {
+  policy: PricingPolicy;
+  defaults: PricingPolicy;
+  limits: PricingLimits;
+  isDefault: boolean;
+  updatedAt: string | null;
+  updatedBy: PricingPerson | null;
+  usage: {
+    starter: number;
+    max: number;
+    pass: number;
+    /** Por plano da tabela (`SEM_PLANO` = empresas ainda sem plano). */
+    organizations: Record<string, { count: number; seats: number; monthlyCents: number }>;
+  };
+  storeProducts: Array<{ id: string; name: string; period: "month" | "year"; amount: number }>;
+}
+
+/** PUT /admin/pricing. */
+export interface UpdatePricingPayload {
+  policy: PricingPolicy;
+  limits: PricingLimits;
+  reason: string;
+}
+
+export interface PricingAuditItem {
+  id: string;
+  createdAt: string;
+  actor: PricingPerson | null;
+  reason: string | null;
+  /** Caminhos com pontos a partir de `{ policy, limits }` (ex.: `policy.consumer.max.monthly`). */
+  changes: Array<{ path: string; before: unknown; after: unknown }>;
+}
+
+/** GET /admin/pricing/quote: quanto a empresa paga. */
+export interface OrgQuote {
+  plan: BusinessPlanKey;
+  cycle: BillingCycle;
+  seats: number;
+  listPerSeat: number | null;
+  discountPercent: number;
+  perSeat: number | null;
+  /** Por mês (no Piloto, o valor único dos 30 dias). */
+  monthlyTotal: number | null;
+  /** 12 meses no anual, 1 no mensal, o valor único no Piloto. */
+  contractTotal: number | null;
+  warnings: string[];
 }
